@@ -1,5 +1,18 @@
 import type { Metadata } from 'next'
+import { Geist } from 'next/font/google'
+import { Fraunces } from 'next/font/google'
 import './globals.css'
+
+const geist = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist',
+})
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+  style: ['normal', 'italic'],
+})
 
 export const metadata: Metadata = {
   title: 'Crew Property',
@@ -13,7 +26,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={`${geist.variable} ${fraunces.variable}`}>
+        {children}
+      </body>
     </html>
   )
 }

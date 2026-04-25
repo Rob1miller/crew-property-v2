@@ -1,39 +1,186 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #111; }
+:root {
+  --color-bg:            45  18%  96%;
+  --color-surface:        0   0% 100%;
+  --color-surface-muted: 20   8%  93%;
+  --color-surface-wash:  40  10%  89%;
 
-.container {
-  max-width: 400px;
-  margin: 100px auto;
-  padding: 2rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --color-border:        36  13%  85%;
+  --color-border-strong: 40  10%  76%;
+
+  --color-ink:           53  23%   8%;
+  --color-ink-muted:     48   7%  26%;
+  --color-ink-subtle:    46   5%  52%;
+  --color-ink-faint:     44   7%  70%;
+
+  --color-green:        151  46%  19%;
+  --color-green-mid:    149  46%  33%;
+  --color-green-muted:  134  41%  88%;
+  --color-green-subtle: 136  38%  94%;
+
+  --color-amber:         23  82%  31%;
+  --color-amber-muted:   48  96%  89%;
+  --color-amber-subtle:  48 100%  96%;
+
+  --color-red:            0  70%  35%;
+  --color-red-muted:      0  93%  94%;
+  --color-red-subtle:     0 100%  98%;
+
+  --color-blue:         214  52%  25%;
+  --color-blue-muted:   214  95%  93%;
+  --color-blue-subtle:  214 100%  97%;
+
+  --font-body:    var(--font-geist),    system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia,   serif;
+
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-lg: 16px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg: 0 16px 40px rgba(0,0,0,.12);
+
+  --sidebar-w:     232px;
+  --topbar-h:       56px;
+  --content-px:     32px;
+  --content-py:     28px;
+  --content-max-w: 1280px;
+
+  --bg:        var(--color-bg);
+  --surface:   var(--color-surface);
+  --surface-2: var(--color-surface-muted);
+  --border:    var(--color-border);
+  --border-2:  var(--color-border-strong);
+  --ink:       var(--color-ink);
+  --ink-2:     var(--color-ink-muted);
+  --ink-3:     var(--color-ink-subtle);
+  --ink-4:     var(--color-ink-faint);
+  --green:     var(--color-green);
+  --green-m:   var(--color-green-mid);
+  --green-l:   var(--color-green-muted);
+  --green-b:   var(--color-green-subtle);
+  --amber:     var(--color-amber);
+  --amber-l:   var(--color-amber-muted);
+  --amber-b:   var(--color-amber-subtle);
+  --red:       var(--color-red);
+  --red-l:     var(--color-red-muted);
+  --red-b:     var(--color-red-subtle);
+  --blue:      var(--color-blue);
+  --blue-l:    var(--color-blue-muted);
+  --blue-b:    var(--color-blue-subtle);
+  --r-sm:      var(--radius-sm);
+  --r:         var(--radius);
+  --sh-md:     var(--shadow-md);
 }
 
-h1 { margin-bottom: 1.5rem; font-size: 1.5rem; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-input {
-  display: block; width: 100%; padding: 0.75rem;
-  margin-bottom: 1rem; border: 1px solid #ddd;
-  border-radius: 4px; font-size: 1rem;
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  background:              hsl(var(--color-bg));
+  color:                   hsl(var(--color-ink));
+  font-family:             var(--font-body);
+  font-size:               14px;
+  line-height:             1.55;
+  -webkit-font-smoothing:  antialiased;
 }
 
-button {
-  display: block; width: 100%; padding: 0.75rem;
-  background: #111; color: white; border: none;
-  border-radius: 4px; font-size: 1rem; cursor: pointer;
+:focus-visible {
+  outline:        2px solid hsl(var(--color-green-mid));
+  outline-offset: 2px;
+  border-radius:  var(--radius-sm);
 }
 
-button:disabled { opacity: 0.6; cursor: not-allowed; }
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--color-border-strong)); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--color-ink-faint)); }
 
-.error { color: red; margin-top: 0.75rem; font-size: 0.875rem; }
-.success { color: green; margin-top: 0.75rem; font-size: 0.875rem; }
-
-a { color: #111; display: block; text-align: center; margin-top: 1rem; font-size: 0.875rem; }
-
-nav {
-  padding: 1rem 2rem; background: white;
-  border-bottom: 1px solid #eee;
-  display: flex; justify-content: space-between; align-items: center;
+.app-shell {
+  display:    flex;
+  min-height: 100vh;
 }
+
+.app-sidebar {
+  width:          var(--sidebar-w);
+  flex-shrink:    0;
+  position:       fixed;
+  top:            0;
+  left:           0;
+  height:         100vh;
+  background:     hsl(var(--color-surface));
+  border-right:   1px solid hsl(var(--color-border));
+  display:        flex;
+  flex-direction: column;
+  z-index:        40;
+  overflow-y:     auto;
+}
+
+.app-main {
+  margin-left:    var(--sidebar-w);
+  flex:           1;
+  min-height:     100vh;
+  display:        flex;
+  flex-direction: column;
+}
+
+.app-topbar {
+  height:        var(--topbar-h);
+  background:    hsl(var(--color-surface));
+  border-bottom: 1px solid hsl(var(--color-border));
+  display:       flex;
+  align-items:   center;
+  padding:       0 var(--content-px);
+  position:      sticky;
+  top:           0;
+  z-index:       30;
+  flex-shrink:   0;
+}
+
+.app-content {
+  flex:      1;
+  padding:   var(--content-py) var(--content-px);
+  width:     100%;
+  max-width: var(--content-max-w);
+}
+
+.page-header {
+  display:         flex;
+  align-items:     flex-start;
+  justify-content: space-between;
+  margin-bottom:   24px;
+  gap:             16px;
+  flex-wrap:       wrap;
+}
+
+.page-header-left h1 {
+  font-family: var(--font-display);
+  font-size:   24px;
+  font-weight: 400;
+  color:       hsl(var(--color-ink));
+  line-height: 1.2;
+}
+
+.page-header-left p {
+  font-size:  13px;
+  color:      hsl(var(--color-ink-subtle));
+  margin-top: 3px;
+}
+
+.page-header-actions {
+  display:     flex;
+  gap:         8px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+@keyframes fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.animate-fade-in  { animation: fade-in  0.18s ease both; }
+.animate-slide-up { animation: slide-up 0.20s ease both; }

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { logoutAction } from '@/app/actions/auth'
+import { AppSidebar } from '@/components/layout/AppSidebar'
+import { AppTopBar } from '@/components/layout/AppTopBar'
 
 export default async function AppLayout({
   children,
@@ -15,16 +16,14 @@ export default async function AppLayout({
   }
 
   return (
-    <>
-      <nav>
-        <span>Crew Property</span>
-        <form action={logoutAction}>
-          <button type="submit" style={{ width: 'auto', padding: '0.5rem 1rem' }}>
-            Sign out
-          </button>
-        </form>
-      </nav>
-      <main>{children}</main>
-    </>
+    <div className="app-shell">
+      <AppSidebar email={user.email ?? ''} />
+      <div className="app-main">
+        <AppTopBar />
+        <main className="app-content animate-fade-in">
+          {children}
+        </main>
+      </div>
+    </div>
   )
 }
