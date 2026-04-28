@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { EditPropertyForm } from '@/components/properties/EditPropertyForm'
+import { DeletePropertyButton } from '@/components/properties/DeletePropertyButton'
 import type { Property, PropertyStatus, PropertyType } from '@/types/property'
 
 const STATUS_LABELS: Record<PropertyStatus, string> = {
@@ -64,18 +66,10 @@ export default async function PropertyDetailPage({
   if (!data) {
     return (
       <div className="animate-slide-up">
-        <Link
-          href="/properties"
-          style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '24px' }}
-        >
+        <Link href="/properties" style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '24px' }}>
           ← Back to properties
         </Link>
-        <div style={{
-          textAlign: 'center', padding: '60px 24px',
-          background: 'hsl(var(--color-surface))',
-          border: '1px solid hsl(var(--color-border))',
-          borderRadius: 'var(--radius)',
-        }}>
+        <div style={{ textAlign: 'center', padding: '60px 24px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)' }}>
           <p style={{ fontSize: '15px', fontWeight: 500, color: 'hsl(var(--color-ink))', marginBottom: '6px' }}>Property not found</p>
           <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>This property does not exist or you do not have access to it.</p>
         </div>
@@ -89,10 +83,7 @@ export default async function PropertyDetailPage({
   return (
     <div className="animate-slide-up">
 
-      <Link
-        href="/properties"
-        style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '24px' }}
-      >
+      <Link href="/properties" style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '24px' }}>
         ← Back to properties
       </Link>
 
@@ -101,26 +92,13 @@ export default async function PropertyDetailPage({
           <h1>{p.address_line_1}</h1>
           <p>{p.town}, {p.postcode}</p>
         </div>
-        <span style={{
-          padding: '5px 12px',
-          borderRadius: '999px',
-          fontSize: '12px',
-          fontWeight: 700,
-          background: status.bg,
-          color: status.text,
-          alignSelf: 'flex-start',
-          marginTop: '4px',
-        }}>
-          {STATUS_LABELS[p.status]}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <EditPropertyForm property={p} />
+          <DeletePropertyButton propertyId={p.id} />
+        </div>
       </div>
 
-      <div style={{
-        background: 'hsl(var(--color-surface))',
-        border: '1px solid hsl(var(--color-border))',
-        borderRadius: 'var(--radius)',
-        padding: '0 24px',
-      }}>
+      <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', padding: '0 24px' }}>
         <Row label="Address" value={
           <>
             <p>{p.address_line_1}</p>
@@ -131,15 +109,7 @@ export default async function PropertyDetailPage({
         <Row label="Postcode"    value={p.postcode} />
         <Row label="Type"        value={TYPE_LABELS[p.property_type]} />
         <Row label="Status"      value={
-          <span style={{
-            display: 'inline-block',
-            padding: '3px 10px',
-            borderRadius: '999px',
-            fontSize: '11px',
-            fontWeight: 700,
-            background: status.bg,
-            color: status.text,
-          }}>
+          <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: status.bg, color: status.text }}>
             {STATUS_LABELS[p.status]}
           </span>
         } />
