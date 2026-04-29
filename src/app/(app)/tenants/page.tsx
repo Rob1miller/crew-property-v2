@@ -6,23 +6,25 @@ import { formatCurrency } from '@/lib/utils/helpers'
 
 interface Property {
   id: string
-  displayName: string
+  address_line_1: string
+  town: string
 }
 
 interface Tenant {
   id: string
-  name: string
-  propertyId: string
-  propertyAddress: string
-  rent: number
-  deposit: number
-  email: string
-  phone: string
-  startDate: string
+  user_id: string
+  property_id: string
+  full_name: string
+  email: string | null
+  phone: string | null
+  rent_amount: number
+  rent_due_day: number | null
+  deposit: number | null
   status: 'active' | 'notice' | 'ended'
+  start_date: string | null
+  end_date: string | null
+  created_at: string
 }
-
-const TENANT_KEY = 'crew_tenants'
 
 const statusLabel: Record<Tenant['status'], string> = {
   active: 'Active',
@@ -65,112 +67,171 @@ const row2: React.CSSProperties = {
   marginBottom:        '14px',
 }
 
-// ── Read properties from Supabase ─────────────────────────
-
-function buildDisplayName(p: any): string {
-  return [p.address_line_1, p.town, p.postcode].filter(Boolean).join(', ')
+const emptyState: React.CSSProperties = {
+  textAlign:    'center',
+  padding:      '60px 24px',
+  background:   'hsl(var(--color-surface))',
+  border:       '1px solid hsl(var(--color-border))',
+  borderRadius: 'var(--radius)',
+  color:        'hsl(var(--color-ink-subtle))',
 }
-
-async function loadPropertiesFromSupabase(): Promise<Property[]> {
-  const supabase = createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return []
-
-  const { data, error } = await supabase
-    .from('properties')
-    .select('id, address_line_1, town, postcode')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-
-  if (error || !data) return []
-
-  return data.map((p: any) => ({
-    id: String(p.id),
-    displayName: buildDisplayName(p),
-  }))
-}
-
-// ── Page ──────────────────────────────────────────────────────
 
 export default function TenantsPage() {
-  const [properties, setProperties] = useState<Property[]>([])
-  const [tenants,    setTenants]    = useState<Tenant[]>([])
-  const [formOpen,   setFormOpen]   = useState(false)
-  const [editing,    setEditing]    = useState<Tenant | null>(null)
+  const supabase = createClient()
 
-  const [name,      setName]      = useState('')
-  const [propId,    setPropId]    = useState('')
-  const [rent,      setRent]      = useState('')
-  const [deposit,   setDeposit]   = useState('')
-  const [email,     setEmail]     = useState('')
-  const [phone,     setPhone]     = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [status,    setStatus]    = useState<Tenant['status']>('active')
+  const [properties,  setProperties]  = useState<Property[]>([])
+  const [tenants,     setTenants]     = useState<Tenant[]>([])
+  const [loading,     setLoading]     = useState(true)
+  const [saving,      setSaving]      = useState(false)
+  const [formError,   setFormError]   = useState<string | null>(null)
+  const [formOpen,    setFormOpen]    = useState(false)
+  const [editing,     setEditing]     = useState<Tenant | null>(null)
+
+  const [fullName,    setFullName]    = useState('')
+  const [propId,      setPropId]      = useState('')
+  const [rentAmount,  setRentAmount]  = useState('')
+  const [rentDueDay,  setRentDueDay]  = useState('')
+  const [deposit,     setDeposit]     = useState('')
+  const [email,       setEmail]       = useState('')
+  const [phone,       setPhone]       = useState('')
+  const [startDate,   setStartDate]   = useState('')
+  const [endDate,     setEndDate]     = useState('')
+  const [status,      setStatus]      = useState<Tenant['status']>('active')
 
   useEffect(() => {
-    loadPropertiesFromSupabase().then(setProperties)
+    async function load() {
+      setLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setLoading(false); return }
 
-    try {
-      const raw = localStorage.getItem(TENANT_KEY)
-      if (raw) setTenants(JSON.parse(raw))
-    } catch {}
+      const [{ data: props }, { data: tens }] = await Promise.all([
+        supabase
+          .from('properties')
+          .select('id, address_line_1, town')
+          .eq('user_id', user.id)
+          .order('created_at'),
+        supabase
+          .from('tenants')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at'),
+      ])
+
+      if (props) setProperties(props)
+      if (tens)  setTenants(tens)
+      setLoading(false)
+    }
+    load()
   }, [])
 
-  function persist(updated: Tenant[]) {
-    setTenants(updated)
-    localStorage.setItem(TENANT_KEY, JSON.stringify(updated))
+  const propertyMap = Object.fromEntries(
+    properties.map((p) => [p.id, `${p.address_line_1}, ${p.town}`])
+  )
+
+  function resetForm() {
+    setFullName(''); setPropId(''); setRentAmount(''); setRentDueDay('')
+    setDeposit(''); setEmail(''); setPhone(''); setStartDate('')
+    setEndDate(''); setStatus('active'); setFormError(null)
   }
 
   function openAdd() {
     setEditing(null)
-    setName(''); setPropId(''); setRent(''); setDeposit('')
-    setEmail(''); setPhone(''); setStartDate(''); setStatus('active')
+    resetForm()
     setFormOpen(true)
   }
 
   function openEdit(t: Tenant) {
     setEditing(t)
-    setName(t.name); setPropId(t.propertyId); setRent(String(t.rent))
-    setDeposit(String(t.deposit)); setEmail(t.email); setPhone(t.phone)
-    setStartDate(t.startDate); setStatus(t.status)
+    setFullName(t.full_name)
+    setPropId(t.property_id)
+    setRentAmount(String(t.rent_amount))
+    setRentDueDay(t.rent_due_day != null ? String(t.rent_due_day) : '')
+    setDeposit(t.deposit != null ? String(t.deposit) : '')
+    setEmail(t.email ?? '')
+    setPhone(t.phone ?? '')
+    setStartDate(t.start_date ?? '')
+    setEndDate(t.end_date ?? '')
+    setStatus(t.status)
+    setFormError(null)
     setFormOpen(true)
   }
 
-  function closeForm() { setFormOpen(false); setEditing(null) }
+  function closeForm() { setFormOpen(false); setEditing(null); setFormError(null) }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const prop = properties.find((p) => p.id === propId)
-    const addr = prop ? prop.displayName : ''
-    if (editing) {
-      persist(tenants.map((t) =>
-        t.id === editing.id
-          ? { ...t, name, propertyId: propId, propertyAddress: addr, rent: Number(rent), deposit: Number(deposit), email, phone, startDate, status }
-          : t
-      ))
-    } else {
-      persist([...tenants, {
-        id: crypto.randomUUID(),
-        name, propertyId: propId, propertyAddress: addr,
-        rent: Number(rent), deposit: Number(deposit),
-        email, phone, startDate, status,
-      }])
+    setSaving(true)
+    setFormError(null)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setFormError('Not authenticated'); setSaving(false); return }
+
+    const payload = {
+      user_id:      user.id,
+      property_id:  propId,
+      full_name:    fullName,
+      email:        email      || null,
+      phone:        phone      || null,
+      rent_amount:  Number(rentAmount),
+      rent_due_day: rentDueDay ? Number(rentDueDay) : null,
+      deposit:      deposit    ? Number(deposit)    : null,
+      start_date:   startDate  || null,
+      end_date:     endDate    || null,
+      status,
     }
+
+    if (editing) {
+      const { error: err } = await supabase
+        .from('tenants')
+        .update(payload)
+        .eq('id', editing.id)
+        .eq('user_id', user.id)
+
+      if (err) { setFormError(err.message); setSaving(false); return }
+
+      setTenants((prev) =>
+        prev.map((t) => t.id === editing.id ? { ...t, ...payload } : t)
+      )
+    } else {
+      const { data, error: err } = await supabase
+        .from('tenants')
+        .insert(payload)
+        .select()
+        .single()
+
+      if (err || !data) { setFormError(err?.message ?? 'Insert failed'); setSaving(false); return }
+
+      setTenants((prev) => [...prev, data])
+    }
+
+    setSaving(false)
     closeForm()
   }
 
-  function deleteTenant(id: string) {
-    if (!confirm('Delete this tenant?')) return
-    persist(tenants.filter((t) => t.id !== id))
+  async function deleteTenant(id: string) {
+    if (!confirm('Delete this tenant? This cannot be undone.')) return
+    const { error: err } = await supabase
+      .from('tenants')
+      .delete()
+      .eq('id', id)
+    if (err) { alert(err.message); return }
+    setTenants((prev) => prev.filter((t) => t.id !== id))
   }
 
   const active       = tenants.filter((t) => t.status === 'active')
-  const totalRent    = active.reduce((s, t) => s + t.rent, 0)
-  const totalDeposit = tenants.reduce((s, t) => s + t.deposit, 0)
+  const totalRent    = active.reduce((s, t) => s + t.rent_amount, 0)
+  const totalDeposit = tenants.reduce((s, t) => s + (t.deposit ?? 0), 0)
+
+  if (loading) {
+    return (
+      <div className="animate-slide-up">
+        <div className="page-header">
+          <div className="page-header-left"><h1>Tenants</h1></div>
+        </div>
+        <p style={{ fontSize: '14px', color: 'hsl(var(--color-ink-subtle))' }}>Loading…</p>
+      </div>
+    )
+  }
 
   return (
     <div className="animate-slide-up">
@@ -219,64 +280,85 @@ export default function TenantsPage() {
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Full name *</label>
-              <input required style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Jane Smith" />
+              <input
+                required
+                style={inputStyle}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="e.g. Jane Smith"
+              />
             </div>
 
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Property *</label>
-              {properties.length > 0 ? (
-                <select required value={propId} onChange={(e) => setPropId(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
-                  <option value="">Select property…</option>
-                  {properties.map((p) => (
-                    <option key={p.id} value={p.id}>{p.displayName}</option>
-                  ))}
-                </select>
-              ) : (
-                <>
-                  <input
-                    required
-                    style={inputStyle}
-                    value={propId}
-                    onChange={(e) => setPropId(e.target.value)}
-                    placeholder="Enter property address"
-                  />
-                  <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))', marginTop: '4px' }}>
-                    No saved properties found — type the address manually.
-                  </p>
-                </>
+              <select
+                required
+                value={propId}
+                onChange={(e) => setPropId(e.target.value)}
+                style={{ ...inputStyle, cursor: 'pointer' }}
+              >
+                <option value="">Select property…</option>
+                {properties.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.address_line_1}, {p.town}
+                  </option>
+                ))}
+              </select>
+              {properties.length === 0 && (
+                <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))', marginTop: '4px' }}>
+                  No properties found — add a property first.
+                </p>
               )}
             </div>
 
             <div style={row2}>
               <div>
                 <label style={labelStyle}>Monthly rent (£) *</label>
-                <input required type="number" min="0" step="0.01" style={inputStyle} value={rent} onChange={(e) => setRent(e.target.value)} placeholder="0.00" />
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  style={inputStyle}
+                  value={rentAmount}
+                  onChange={(e) => setRentAmount(e.target.value)}
+                  placeholder="0.00"
+                />
               </div>
+              <div>
+                <label style={labelStyle}>Rent due day</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  style={inputStyle}
+                  value={rentDueDay}
+                  onChange={(e) => setRentDueDay(e.target.value)}
+                  placeholder="e.g. 1"
+                />
+              </div>
+            </div>
+
+            <div style={row2}>
               <div>
                 <label style={labelStyle}>Deposit (£)</label>
-                <input type="number" min="0" step="0.01" style={inputStyle} value={deposit} onChange={(e) => setDeposit(e.target.value)} placeholder="0.00" />
-              </div>
-            </div>
-
-            <div style={row2}>
-              <div>
-                <label style={labelStyle}>Email</label>
-                <input type="email" style={inputStyle} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" />
-              </div>
-              <div>
-                <label style={labelStyle}>Phone</label>
-                <input type="tel" style={inputStyle} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07700 000000" />
-              </div>
-            </div>
-
-            <div style={row2}>
-              <div>
-                <label style={labelStyle}>Tenancy start date</label>
-                <input type="date" style={inputStyle} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  style={inputStyle}
+                  value={deposit}
+                  onChange={(e) => setDeposit(e.target.value)}
+                  placeholder="0.00"
+                />
               </div>
               <div>
                 <label style={labelStyle}>Status</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as Tenant['status'])} style={{ ...inputStyle, cursor: 'pointer' }}>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as Tenant['status'])}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
                   <option value="active">Active</option>
                   <option value="notice">Notice given</option>
                   <option value="ended">Ended</option>
@@ -284,11 +366,69 @@ export default function TenantsPage() {
               </div>
             </div>
 
+            <div style={row2}>
+              <div>
+                <label style={labelStyle}>Email</label>
+                <input
+                  type="email"
+                  style={inputStyle}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="jane@example.com"
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Phone</label>
+                <input
+                  type="tel"
+                  style={inputStyle}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="07700 000000"
+                />
+              </div>
+            </div>
+
+            <div style={row2}>
+              <div>
+                <label style={labelStyle}>Start date</label>
+                <input
+                  type="date"
+                  style={inputStyle}
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>End date</label>
+                <input
+                  type="date"
+                  style={inputStyle}
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {formError && (
+              <p style={{ fontSize: '13px', color: 'hsl(var(--color-red))', marginBottom: '14px' }}>
+                {formError}
+              </p>
+            )}
+
             <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-              <button type="submit" style={{ padding: '9px 20px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                {editing ? 'Save changes' : 'Add tenant'}
+              <button
+                type="submit"
+                disabled={saving}
+                style={{ padding: '9px 20px', background: saving ? 'hsl(var(--color-surface-muted))' : 'hsl(var(--color-green))', color: saving ? 'hsl(var(--color-ink-subtle))' : 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer' }}
+              >
+                {saving ? 'Saving…' : editing ? 'Save changes' : 'Add tenant'}
               </button>
-              <button type="button" onClick={closeForm} style={{ padding: '9px 20px', background: 'transparent', color: 'hsl(var(--color-ink-subtle))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '13px', cursor: 'pointer' }}>
+              <button
+                type="button"
+                onClick={closeForm}
+                style={{ padding: '9px 20px', background: 'transparent', color: 'hsl(var(--color-ink-subtle))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '13px', cursor: 'pointer' }}
+              >
                 Cancel
               </button>
             </div>
@@ -297,51 +437,66 @@ export default function TenantsPage() {
       )}
 
       {tenants.length === 0 && !formOpen ? (
-        <div style={{ textAlign: 'center', padding: '60px 24px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', color: 'hsl(var(--color-ink-subtle))' }}>
+        <div style={emptyState}>
           <p style={{ fontSize: '15px', fontWeight: 500, marginBottom: '8px' }}>No tenants yet</p>
           <p style={{ fontSize: '13px', marginBottom: '20px' }}>Add your first tenant to get started.</p>
-          <button onClick={openAdd} style={{ padding: '9px 18px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+          <button
+            onClick={openAdd}
+            style={{ padding: '9px 18px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+          >
             + Add tenant
           </button>
         </div>
       ) : tenants.length > 0 ? (
         <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
           {tenants.map((t, index) => (
-            <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', borderBottom: index < tenants.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
+            <div
+              key={t.id}
+              style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', borderBottom: index < tenants.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}
+            >
               <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'hsl(var(--color-green-subtle))', border: '1px solid hsl(var(--color-green-muted))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontWeight: 700, color: 'hsl(var(--color-green))' }}>
-                {t.name.charAt(0).toUpperCase()}
+                {t.full_name.charAt(0).toUpperCase()}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                   <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-ink))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {t.name}
+                    {t.full_name}
                   </p>
                   <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, background: t.status === 'active' ? 'hsl(var(--color-green-subtle))' : 'hsl(var(--color-surface-muted))', color: statusColour[t.status], border: `1px solid ${t.status === 'active' ? 'hsl(var(--color-green-muted))' : 'hsl(var(--color-border))'}` }}>
                     {statusLabel[t.status]}
                   </span>
                 </div>
                 <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {t.propertyAddress || '—'}
+                  {propertyMap[t.property_id] ?? '—'}
                   {t.email ? ` · ${t.email}` : ''}
                   {t.phone ? ` · ${t.phone}` : ''}
                 </p>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', flexShrink: 0, minWidth: '100px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', flexShrink: 0, minWidth: '110px' }}>
                 <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>
-                  {formatCurrency(t.rent)}<span style={{ fontSize: '11px', fontWeight: 400, color: 'hsl(var(--color-ink-subtle))' }}>/mo</span>
+                  {formatCurrency(t.rent_amount)}
+                  <span style={{ fontSize: '11px', fontWeight: 400, color: 'hsl(var(--color-ink-subtle))' }}>/mo</span>
                 </p>
-                {t.deposit > 0 && (
-                  <p style={{ fontSize: '11px', color: 'hsl(var(--color-ink-subtle))' }}>Dep. {formatCurrency(t.deposit)}</p>
+                {t.deposit != null && t.deposit > 0 && (
+                  <p style={{ fontSize: '11px', color: 'hsl(var(--color-ink-subtle))' }}>
+                    Dep. {formatCurrency(t.deposit)}
+                  </p>
                 )}
               </div>
 
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                <button onClick={() => openEdit(t)} style={{ padding: '6px 14px', background: 'transparent', color: 'hsl(var(--color-ink-subtle))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                <button
+                  onClick={() => openEdit(t)}
+                  style={{ padding: '6px 14px', background: 'transparent', color: 'hsl(var(--color-ink-subtle))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                >
                   Edit
                 </button>
-                <button onClick={() => deleteTenant(t.id)} style={{ padding: '6px 14px', background: 'transparent', color: 'hsl(var(--color-red))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                <button
+                  onClick={() => deleteTenant(t.id)}
+                  style={{ padding: '6px 14px', background: 'transparent', color: 'hsl(var(--color-red))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                >
                   Delete
                 </button>
               </div>
