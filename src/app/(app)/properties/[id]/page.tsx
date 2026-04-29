@@ -2,50 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { EditPropertyForm } from '@/components/properties/EditPropertyForm'
 import { DeletePropertyButton } from '@/components/properties/DeletePropertyButton'
-import type { Property, PropertyStatus, PropertyType } from '@/types/property'
-
-const STATUS_LABELS: Record<PropertyStatus, string> = {
-  occupied: 'Occupied',
-  vacant:   'Vacant',
-  refurb:   'Refurb',
-  for_sale: 'For sale',
-}
-
-const STATUS_COLOURS: Record<PropertyStatus, { bg: string; text: string }> = {
-  occupied: { bg: 'hsl(var(--color-green-muted))', text: 'hsl(var(--color-green))' },
-  vacant:   { bg: 'hsl(var(--color-amber-muted))', text: 'hsl(var(--color-amber))' },
-  refurb:   { bg: 'hsl(var(--color-blue-muted))',  text: 'hsl(var(--color-blue))' },
-  for_sale: { bg: 'hsl(var(--color-surface-muted))', text: 'hsl(var(--color-ink-subtle))' },
-}
-
-const TYPE_LABELS: Record<PropertyType, string> = {
-  house:      'House',
-  flat:       'Flat',
-  bungalow:   'Bungalow',
-  hmo:        'HMO',
-  commercial: 'Commercial',
-  other:      'Other',
-}
-
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: '160px 1fr',
-      gap: '12px',
-      padding: '14px 0',
-      borderBottom: '1px solid hsl(var(--color-border))',
-      alignItems: 'start',
-    }}>
-      <p style={{ fontSize: '12px', fontWeight: 600, color: 'hsl(var(--color-ink-subtle))', textTransform: 'uppercase', letterSpacing: '0.4px', paddingTop: '1px' }}>
-        {label}
-      </p>
-      <div style={{ fontSize: '14px', color: 'hsl(var(--color-ink))' }}>
-        {value}
-      </div>
-    </div>
-  )
-}
+import AddTenantForm from '@/components/tenants/AddTenantForm'
+import type { Property } from '@/types/property'
 
 export default async function PropertyDetailPage({
   params,
@@ -56,66 +14,52 @@ export default async function PropertyDetailPage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data } = await supabase
+  const { data: property } = await supabase
     .from('properties')
     .select('*')
     .eq('id', id)
     .eq('user_id', user!.id)
     .single()
 
-  if (!data) {
-    return (
-      <div className="animate-slide-up">
-        <Link href="/properties" style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '24px' }}>
-          ← Back to properties
-        </Link>
-        <div style={{ textAlign: 'center', padding: '60px 24px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)' }}>
-          <p style={{ fontSize: '15px', fontWeight: 500, color: 'hsl(var(--color-ink))', marginBottom: '6px' }}>Property not found</p>
-          <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>This property does not exist or you do not have access to it.</p>
-        </div>
-      </div>
-    )
+  const { data: tenants } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('property_id', id)
+    .eq('user_id', user!.id)
+
+  if (!property) {
+    return <p>Property not found</p>
   }
 
-  const p = data as Property
-  const status = STATUS_COLOURS[p.status]
+  const p = property as Property
 
   return (
-    <div className="animate-slide-up">
+    <div>
+      <Link href="/properties">← Back to properties</Link>
 
-      <Link href="/properties" style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '24px' }}>
-        ← Back to properties
-      </Link>
+      <h1>{p.address_line_1}</h1>
+      <p>{p.town}, {p.postcode}</p>
 
-      <div className="page-header">
-        <div className="page-header-left">
-          <h1>{p.address_line_1}</h1>
-          <p>{p.town}, {p.postcode}</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <EditPropertyForm property={p} />
-          <DeletePropertyButton propertyId={p.id} />
-        </div>
+      <div style={{ marginTop: '20px' }}>
+        <EditPropertyForm property={p} />
+        <DeletePropertyButton propertyId={p.id} />
       </div>
 
-      <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', padding: '0 24px' }}>
-        <Row label="Address" value={
-          <>
-            <p>{p.address_line_1}</p>
-            {p.address_line_2 && <p style={{ color: 'hsl(var(--color-ink-muted))' }}>{p.address_line_2}</p>}
-          </>
-        } />
-        <Row label="Town / City" value={p.town} />
-        <Row label="Postcode"    value={p.postcode} />
-        <Row label="Type"        value={TYPE_LABELS[p.property_type]} />
-        <Row label="Status"      value={
-          <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: status.bg, color: status.text }}>
-            {STATUS_LABELS[p.status]}
-          </span>
-        } />
-        <Row label="Added" value={new Date(p.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} />
-      </div>
+      <section style={{ marginTop: '40px' }}>
+        <h2>Tenants</h2>
 
+        {!tenants || tenants.length === 0 ? (
+          <p>No tenants yet</p>
+        ) : (
+          tenants.map((tenant) => (
+            <div key={tenant.id}>
+              <p>{tenant.full_name}</p>
+            </div>
+          ))
+        )}
+
+        <AddTenantForm propertyId={id} />
+      </section>
     </div>
   )
 }
