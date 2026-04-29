@@ -52,8 +52,24 @@ export default async function PropertyDetailPage({
           <p>No tenants yet</p>
         ) : (
           tenants.map((tenant) => (
-            <div key={tenant.id}>
-              <p>{tenant.full_name}</p>
+            <div
+              key={tenant.id}
+              style={{
+                marginTop: '12px',
+                padding: '16px',
+                border: '1px solid hsl(var(--color-border))',
+                borderRadius: 'var(--radius)',
+                background: 'hsl(var(--color-surface))',
+              }}
+            >
+              <p style={{ fontWeight: 700, marginBottom: '6px' }}>
+                {tenant.full_name}
+              </p>
+              <p>Rent: £{tenant.rent_amount}/month</p>
+              <p>Status: {tenant.status}</p>
+              {tenant.email && <p>Email: {tenant.email}</p>}
+              {tenant.phone && <p>Phone: {tenant.phone}</p>}
+              {tenant.start_date && <p>Start date: {tenant.start_date}</p>}
             </div>
           ))
         )}
