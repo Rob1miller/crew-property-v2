@@ -4,6 +4,36 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Fetch data
+  const [{ data: properties }, { data: tenants }] = await Promise.all([
+    supabase
+      .from('properties')
+      .select('id')
+      .eq('user_id', user!.id),
+
+    supabase
+      .from('tenants')
+      .select('property_id, rent_amount, status')
+      .eq('user_id', user!.id),
+  ])
+
+  const propertyCount = properties?.length ?? 0
+
+  const activeTenants = (tenants ?? []).filter(t => t.status === 'active')
+  const activeTenantCount = activeTenants.length
+
+  const totalRent = activeTenants.reduce((sum, t) => sum + (t.rent_amount ?? 0), 0)
+
+  const occupiedPropertyIds = new Set(activeTenants.map(t => t.property_id))
+  const vacantCount = propertyCount - occupiedPropertyIds.size
+
+  const stats = [
+    { label: 'Properties', value: propertyCount },
+    { label: 'Active tenants', value: activeTenantCount },
+    { label: 'Monthly rent', value: `£${totalRent.toLocaleString('en-GB')}` },
+    { label: 'Vacant', value: vacantCount },
+  ]
+
   return (
     <div className="animate-slide-up">
       <div className="page-header">
@@ -13,7 +43,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Placeholder stat cards */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -24,24 +53,20 @@ export default async function DashboardPage() {
         overflow: 'hidden',
         marginBottom: '24px',
       }}>
-        {['Properties', 'Tenants', 'Compliance items', 'EPC plans'].map(label => (
-          <div key={label} style={{
+        {stats.map(s => (
+          <div key={s.label} style={{
             background: 'hsl(var(--color-surface))',
             padding: '20px 24px',
           }}>
             <p style={{ fontSize: '11px', fontWeight: 700, color: 'hsl(var(--color-ink-faint))', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>
-              {label}
+              {s.label}
             </p>
             <p style={{ fontFamily: 'var(--font-display)', fontSize: '28px', color: 'hsl(var(--color-ink))' }}>
-              0
+              {s.value}
             </p>
           </div>
         ))}
       </div>
-
-      <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>
-        Your portfolio is empty. Properties and features are coming in the next phase.
-      </p>
     </div>
   )
 }
