@@ -1,17 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
-import UploadDocumentForm from '@/components/documents/UploadDocumentForm'
-import { deleteDocumentAction } from '@/app/actions/documents'
-import type { Property } from '@/types/property'
-import type { ComplianceItem } from '@/types/compliance'
-import type { Document } from '@/types/document'
 
-function fileIcon(fileType: string | null): string {
-  if (!fileType) return '📄'
-  if (fileType.includes('pdf')) return '📕'
-  if (fileType.includes('image')) return '🖼️'
-  if (fileType.includes('word') || fileType.includes('document')) return '📝'
-  if (fileType.includes('sheet') || fileType.includes('excel')) return '📊'
-  return '📄'
+const complianceTypeLabel: Record<string, string> = {
+  gas:       'Gas Safety',
+  eicr:      'Electrical (EICR)',
+  epc:       'EPC',
+  insurance: 'Insurance',
 }
 
 export default async function DocumentsPage() {
@@ -21,70 +14,196 @@ export default async function DocumentsPage() {
   const [
     { data: propertiesData },
     { data: complianceData },
-    { data: documentsData },
+    { data: epcWorksData },
   ] = await Promise.all([
-    supabase.from('properties').select('id, address_line_1, town').eq('user_id', user!.id),
-    supabase.from('compliance_items').select('id, property_id, title').eq('user_id', user!.id),
-    supabase.from('documents').select('*').eq('user_id', user!.id),
+    supabase
+      .from('properties')
+      .select('id, address_line_1, town')
+      .eq('user_id', user!.id),
+    supabase
+      .from('compliance_items')
+      .select('id, property_id, type, title, expiry_date, document_url, updated_at, created_at')
+      .eq('user_id', user!.id)
+      .not('document_url', 'is', null)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('epc_works')
+      .select('id, property_id, work_completed, completed_date, receipt_url, created_at')
+      .eq('user_id', user!.id)
+      .not('receipt_url', 'is', null)
+      .order('created_at', { ascending: false }),
   ])
 
-  const properties = (propertiesData ?? []) as Pick<Property, 'id' | 'address_line_1' | 'town'>[]
-  const complianceItems = (complianceData ?? []) as Pick<ComplianceItem, 'id' | 'property_id' | 'title'>[]
-  const documents = (documentsData ?? []) as Document[]
-
   const propertyMap = Object.fromEntries(
-    properties.map(p => [p.id, `${p.address_line_1}, ${p.town}`])
+    (propertiesData ?? []).map((p) => [p.id, `${p.address_line_1}, ${p.town}`])
   )
 
-  const docsWithUrls = await Promise.all(
-    documents.map(async doc => {
-      const { data } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(doc.file_path, 3600)
-      return { ...doc, signedUrl: data?.signedUrl ?? null }
-    })
-  )
+  type DocRow = {
+    id:         string
+    kind:       'compliance' | 'epc'
+    title:      string
+    subLabel:   string | null
+    propertyId: string
+    url:        string
+    date:       string | null
+  }
+
+  const complianceDocs: DocRow[] = (complianceData ?? []).map((c) => ({
+    id:         `c-${c.id}`,
+    kind:       'compliance',
+    title:      c.title,
+    subLabel:   complianceTypeLabel[c.type] ?? c.type,
+    propertyId: c.property_id,
+    url:        c.document_url!,
+    date:       c.updated_at ?? c.created_at,
+  }))
+
+  const epcDocs: DocRow[] = (epcWorksData ?? []).map((w) => ({
+    id:         `e-${w.id}`,
+    kind:       'epc',
+    title:      w.work_completed,
+    subLabel:   null,
+    propertyId: w.property_id,
+    url:        w.receipt_url!,
+    date:       w.completed_date ?? w.created_at,
+  }))
+
+  const allDocs = [...complianceDocs, ...epcDocs].sort((a, b) => {
+    if (!a.date && !b.date) return 0
+    if (!a.date) return 1
+    if (!b.date) return -1
+    return new Date(b.date).getTime() - new Date(a.date).getTime()
+  })
 
   return (
-    <div>
-      <h1>Documents</h1>
+    <div className="animate-slide-up">
 
-      <UploadDocumentForm
-        properties={properties}
-        complianceItems={complianceItems}
-      />
+      {/* Page header */}
+      <div className="page-header">
+        <div className="page-header-left">
+          <h1>Documents</h1>
+          <p>
+            {allDocs.length}{' '}
+            {allDocs.length === 1 ? 'document' : 'documents'} across all properties
+          </p>
+        </div>
+      </div>
 
-      {docsWithUrls.length === 0 ? (
-        <p>No documents yet</p>
+      {allDocs.length === 0 ? (
+        <div
+          style={{
+            textAlign:    'center',
+            padding:      '60px 24px',
+            background:   'hsl(var(--color-surface))',
+            border:       '1px solid hsl(var(--color-border))',
+            borderRadius: 'var(--radius)',
+            color:        'hsl(var(--color-ink-subtle))',
+            marginTop:    '24px',
+          }}
+        >
+          <p style={{ fontSize: '15px', fontWeight: 500, color: 'hsl(var(--color-ink))', marginBottom: '8px' }}>
+            No documents yet
+          </p>
+          <p style={{ fontSize: '13px' }}>
+            Upload documents via compliance items or EPC work receipts on each property page.
+          </p>
+        </div>
       ) : (
-        <div>
-          {docsWithUrls.map(doc => (
-            <div key={doc.id} style={{ display: 'flex', gap: '10px' }}>
-              
-              <span>{fileIcon(doc.file_type)}</span>
+        <div
+          style={{
+            background:   'hsl(var(--color-surface))',
+            border:       '1px solid hsl(var(--color-border))',
+            borderRadius: 'var(--radius)',
+            overflow:     'hidden',
+            marginTop:    '24px',
+          }}
+        >
+          {allDocs.map((doc, index) => {
+            const address    = propertyMap[doc.propertyId] ?? 'Unknown property'
+            const isLast     = index === allDocs.length - 1
+            const kindBg     = doc.kind === 'compliance' ? 'hsl(var(--color-green-subtle))' : 'hsl(38 92% 50% / 0.1)'
+            const kindColor  = doc.kind === 'compliance' ? 'hsl(var(--color-green))' : 'hsl(38 92% 40%)'
+            const kindBorder = doc.kind === 'compliance' ? 'hsl(var(--color-green-muted))' : 'hsl(38 92% 70%)'
+            const kindLabel  = doc.kind === 'compliance' ? 'Compliance' : 'EPC Receipt'
 
-              <div style={{ flex: 1 }}>
-                <p>{doc.file_name}</p>
-                <p>{propertyMap[doc.property_id]}</p>
-              </div>
-
-              {doc.signedUrl && (
-                <a
-                  href={doc.signedUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+            return (
+              <div
+                key={doc.id}
+                style={{
+                  display:      'flex',
+                  alignItems:   'center',
+                  gap:          '14px',
+                  padding:      '14px 20px',
+                  borderBottom: isLast ? 'none' : '1px solid hsl(var(--color-border))',
+                }}
+              >
+                {/* Kind badge */}
+                <span
+                  style={{
+                    flexShrink:   0,
+                    padding:      '3px 9px',
+                    borderRadius: '999px',
+                    fontSize:     '11px',
+                    fontWeight:   600,
+                    background:   kindBg,
+                    color:        kindColor,
+                    border:       `1px solid ${kindBorder}`,
+                    whiteSpace:   'nowrap',
+                  }}
                 >
-                  Open
-                </a>
-              )}
+                  {kindLabel}
+                </span>
 
-              <form action={deleteDocumentAction}>
-                <input type="hidden" name="id" value={doc.id} />
-                <button type="submit">Delete</button>
-              </form>
+                {/* Text */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' as const, marginBottom: '2px' }}>
+                    <p
+                      style={{
+                        fontSize:     '14px',
+                        fontWeight:   600,
+                        color:        'hsl(var(--color-ink))',
+                        overflow:     'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace:   'nowrap',
+                        maxWidth:     '340px',
+                      }}
+                    >
+                      {doc.title}
+                    </p>
+                    {doc.subLabel ? (
+                      <span
+                        style={{
+                          padding:      '1px 7px',
+                          borderRadius: '999px',
+                          fontSize:     '11px',
+                          fontWeight:   600,
+                          background:   'hsl(var(--color-surface-muted))',
+                          color:        'hsl(var(--color-ink-subtle))',
+                          border:       '1px solid hsl(var(--color-border))',
+                          flexShrink:   0,
+                        }}
+                      >
+                        {doc.subLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))' }}>
+                    {address}
+                    {doc.date
+                      ? ` · ${new Date(doc.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                      : ''}
+                  </p>
+                </div>
 
-            </div>
-          ))}
+                {/* View button */}
+                {doc.url ? (
+                  <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, padding: '6px 14px', background: 'hsl(var(--color-green-subtle))', color: 'hsl(var(--color-green))', border: '1px solid hsl(var(--color-green-muted))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
+                    View
+                  </a>
+                ) : null}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
