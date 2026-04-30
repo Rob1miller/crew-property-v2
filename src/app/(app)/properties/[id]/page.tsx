@@ -40,6 +40,33 @@ async function addComplianceAction(formData: FormData) {
   revalidatePath(`/properties/${property_id}`)
 }
 
+async function updateComplianceAction(formData: FormData) {
+  'use server'
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const id           = (formData.get('id')           as string)?.trim()
+  const property_id  = (formData.get('property_id')  as string)?.trim()
+  const type         = (formData.get('type')         as string)?.trim()
+  const title        = (formData.get('title')        as string)?.trim()
+  const expiry_date  = (formData.get('expiry_date')  as string)?.trim()
+  const notes        = (formData.get('notes')        as string)?.trim() || null
+  const document_url = (formData.get('document_url') as string)?.trim() || null
+  if (!id || !property_id || !type || !title || !expiry_date) return
+  await supabase.from('compliance_items')
+    .update({
+      type,
+      title,
+      expiry_date,
+      notes,
+      document_url,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .eq('user_id', user.id)
+  revalidatePath(`/properties/${property_id}`)
+}
+
 async function deleteComplianceAction(formData: FormData) {
   'use server'
   const id          = formData.get('id')          as string
@@ -311,6 +338,7 @@ export default async function PropertyDetailPage({
           </span>
         </div>
 
+        {/* Add new item */}
         <details style={{ marginBottom: '16px' }}>
           <summary style={{ listStyle: 'none', display: 'inline-flex', alignItems: 'center', padding: '7px 16px', background: 'hsl(var(--color-green))', color: 'white', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
             + Add item
@@ -359,8 +387,10 @@ export default async function PropertyDetailPage({
             {compliance.map((item, index) => {
               const badge = expiryBadge(item.expiry_date)
               return (
-                <div key={item.id} style={{ padding: '14px 20px', borderBottom: index < compliance.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                <div key={item.id} style={{ borderBottom: index < compliance.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
+
+                  {/* ── Item summary row ── */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', padding: '14px 20px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' as const }}>
                         <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>{item.title}</p>
@@ -377,11 +407,11 @@ export default async function PropertyDetailPage({
                       {item.notes && <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))', fontStyle: 'italic', marginTop: '4px' }}>{item.notes}</p>}
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
-                      {item.document_url && (
+                      {item.document_url ? (
                         <a href={item.document_url} target="_blank" rel="noopener noreferrer" style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 600, color: 'hsl(var(--color-green))', background: 'hsl(var(--color-green-subtle))', border: '1px solid hsl(var(--color-green-muted))', borderRadius: 'var(--radius-sm)', textDecoration: 'none' }}>
                           View
                         </a>
-                      )}
+                      ) : null}
                       <form action={deleteComplianceAction}>
                         <input type="hidden" name="id"          value={item.id} />
                         <input type="hidden" name="property_id" value={id} />
@@ -391,6 +421,50 @@ export default async function PropertyDetailPage({
                       </form>
                     </div>
                   </div>
+
+                  {/* ── Edit / renew form ── */}
+                  <details style={{ borderTop: '1px dashed hsl(var(--color-border))' }}>
+                    <summary style={{ listStyle: 'none', padding: '8px 20px', fontSize: '12px', fontWeight: 600, color: 'hsl(var(--color-ink-subtle))', cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      ✏️ Edit / renew
+                    </summary>
+                    <div style={{ padding: '16px 20px 20px', background: 'hsl(var(--color-surface-muted))' }}>
+                      <form action={updateComplianceAction}>
+                        <input type="hidden" name="id"          value={item.id} />
+                        <input type="hidden" name="property_id" value={id} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                          <div>
+                            <label style={labelSt}>Type *</label>
+                            <select name="type" required defaultValue={item.type} style={{ ...inputStyle, cursor: 'pointer' }}>
+                              <option value="gas">Gas Safety</option>
+                              <option value="eicr">Electrical (EICR)</option>
+                              <option value="epc">EPC</option>
+                              <option value="insurance">Insurance</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={labelSt}>Expiry date *</label>
+                            <input name="expiry_date" type="date" required defaultValue={item.expiry_date} style={inputStyle} />
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: '12px' }}>
+                          <label style={labelSt}>Title *</label>
+                          <input name="title" type="text" required defaultValue={item.title} style={inputStyle} />
+                        </div>
+                        <div style={{ marginBottom: '12px' }}>
+                          <label style={labelSt}>Notes</label>
+                          <textarea name="notes" rows={2} defaultValue={item.notes ?? ''} style={{ ...inputStyle, resize: 'vertical' as const }} />
+                        </div>
+                        <div style={{ marginBottom: '16px' }}>
+                          <label style={labelSt}>Document link</label>
+                          <input name="document_url" type="url" defaultValue={item.document_url ?? ''} placeholder="Paste document link for now" style={inputStyle} />
+                        </div>
+                        <button type="submit" style={{ padding: '7px 18px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                          Save changes
+                        </button>
+                      </form>
+                    </div>
+                  </details>
+
                 </div>
               )
             })}
@@ -574,11 +648,11 @@ export default async function PropertyDetailPage({
                         {work.notes && <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))', fontStyle: 'italic', marginTop: '3px' }}>{work.notes}</p>}
                       </div>
                       <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
-                        {work.receipt_url && (
+                        {work.receipt_url ? (
                           <a href={work.receipt_url} target="_blank" rel="noopener noreferrer" style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 600, color: 'hsl(var(--color-green))', background: 'hsl(var(--color-green-subtle))', border: '1px solid hsl(var(--color-green-muted))', borderRadius: 'var(--radius-sm)', textDecoration: 'none' }}>
                             Receipt
                           </a>
-                        )}
+                        ) : null}
                         <form action={deleteEpcWorkAction}>
                           <input type="hidden" name="id"          value={work.id} />
                           <input type="hidden" name="property_id" value={id} />
