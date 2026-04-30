@@ -3,6 +3,9 @@ import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
 import { EditPropertyForm } from '@/components/properties/EditPropertyForm'
 import { DeletePropertyButton } from '@/components/properties/DeletePropertyButton'
+import { ComplianceAddForm } from '@/components/properties/ComplianceAddForm'
+import { ComplianceEditForm } from '@/components/properties/ComplianceEditForm'
+import { EpcWorkAddForm } from '@/components/properties/EpcWorkAddForm'
 import type { Property } from '@/types/property'
 
 // ─────────────────────────────────────────────────────────────
@@ -21,50 +24,6 @@ async function endTenancyAction(formData: FormData) {
     .update({ status: 'ended', end_date: new Date().toISOString().split('T')[0] })
     .eq('id', tenantId).eq('user_id', user.id)
   revalidatePath(`/properties/${propertyId}`)
-}
-
-async function addComplianceAction(formData: FormData) {
-  'use server'
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  const property_id = formData.get('property_id') as string
-  const type        = formData.get('type')        as string
-  const title       = formData.get('title')       as string
-  const expiry_date = formData.get('expiry_date') as string
-  const notes       = (formData.get('notes') as string) || null
-  if (!property_id || !type || !title || !expiry_date) return
-  await supabase.from('compliance_items').insert({
-    user_id: user.id, property_id, type, title, expiry_date, notes, status: 'active',
-  })
-  revalidatePath(`/properties/${property_id}`)
-}
-
-async function updateComplianceAction(formData: FormData) {
-  'use server'
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  const id           = (formData.get('id')           as string)?.trim()
-  const property_id  = (formData.get('property_id')  as string)?.trim()
-  const type         = (formData.get('type')         as string)?.trim()
-  const title        = (formData.get('title')        as string)?.trim()
-  const expiry_date  = (formData.get('expiry_date')  as string)?.trim()
-  const notes        = (formData.get('notes')        as string)?.trim() || null
-  const document_url = (formData.get('document_url') as string)?.trim() || null
-  if (!id || !property_id || !type || !title || !expiry_date) return
-  await supabase.from('compliance_items')
-    .update({
-      type,
-      title,
-      expiry_date,
-      notes,
-      document_url,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .eq('user_id', user.id)
-  revalidatePath(`/properties/${property_id}`)
 }
 
 async function deleteComplianceAction(formData: FormData) {
@@ -100,27 +59,6 @@ async function saveEpcPlanAction(formData: FormData) {
       user_id: user.id, property_id, current_rating, target_rating, expiry_date, cap_amount,
     })
   }
-  revalidatePath(`/properties/${property_id}`)
-}
-
-async function addEpcWorkAction(formData: FormData) {
-  'use server'
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  const property_id    = formData.get('property_id')    as string
-  const epc_plan_id    = formData.get('epc_plan_id')    as string
-  const work_completed = formData.get('work_completed') as string
-  const cost           = Number(formData.get('cost'))   || 0
-  const completed_date = (formData.get('completed_date') as string) || null
-  const contractor     = (formData.get('contractor')    as string) || null
-  const notes          = (formData.get('notes')         as string) || null
-  const receipt_url    = (formData.get('receipt_url')   as string) || null
-  if (!property_id || !epc_plan_id || !work_completed) return
-  await supabase.from('epc_works').insert({
-    user_id: user.id, property_id, epc_plan_id, work_completed,
-    cost, completed_date, contractor, notes, receipt_url,
-  })
   revalidatePath(`/properties/${property_id}`)
 }
 
@@ -338,44 +276,7 @@ export default async function PropertyDetailPage({
           </span>
         </div>
 
-        {/* Add new item */}
-        <details style={{ marginBottom: '16px' }}>
-          <summary style={{ listStyle: 'none', display: 'inline-flex', alignItems: 'center', padding: '7px 16px', background: 'hsl(var(--color-green))', color: 'white', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
-            + Add item
-          </summary>
-          <div style={{ marginTop: '12px', ...card }}>
-            <form action={addComplianceAction}>
-              <input type="hidden" name="property_id" value={id} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                <div>
-                  <label style={labelSt}>Type *</label>
-                  <select name="type" required style={{ ...inputStyle, cursor: 'pointer' }}>
-                    <option value="">Select…</option>
-                    <option value="gas">Gas Safety</option>
-                    <option value="eicr">Electrical (EICR)</option>
-                    <option value="epc">EPC</option>
-                    <option value="insurance">Insurance</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={labelSt}>Expiry date *</label>
-                  <input name="expiry_date" type="date" required style={inputStyle} />
-                </div>
-              </div>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={labelSt}>Title *</label>
-                <input name="title" type="text" required placeholder="e.g. Gas Safety Certificate 2025" style={inputStyle} />
-              </div>
-              <div style={{ marginBottom: '18px' }}>
-                <label style={labelSt}>Notes</label>
-                <textarea name="notes" rows={2} style={{ ...inputStyle, resize: 'vertical' as const }} />
-              </div>
-              <button type="submit" style={{ padding: '8px 20px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                Save item
-              </button>
-            </form>
-          </div>
-        </details>
+        <ComplianceAddForm propertyId={id} />
 
         {compliance.length === 0 ? (
           <div style={{ ...card, textAlign: 'center', padding: '32px 24px' }}>
@@ -422,48 +323,8 @@ export default async function PropertyDetailPage({
                     </div>
                   </div>
 
-                  {/* ── Edit / renew form ── */}
-                  <details style={{ borderTop: '1px dashed hsl(var(--color-border))' }}>
-                    <summary style={{ listStyle: 'none', padding: '8px 20px', fontSize: '12px', fontWeight: 600, color: 'hsl(var(--color-ink-subtle))', cursor: 'pointer', userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      ✏️ Edit / renew
-                    </summary>
-                    <div style={{ padding: '16px 20px 20px', background: 'hsl(var(--color-surface-muted))' }}>
-                      <form action={updateComplianceAction}>
-                        <input type="hidden" name="id"          value={item.id} />
-                        <input type="hidden" name="property_id" value={id} />
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                          <div>
-                            <label style={labelSt}>Type *</label>
-                            <select name="type" required defaultValue={item.type} style={{ ...inputStyle, cursor: 'pointer' }}>
-                              <option value="gas">Gas Safety</option>
-                              <option value="eicr">Electrical (EICR)</option>
-                              <option value="epc">EPC</option>
-                              <option value="insurance">Insurance</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={labelSt}>Expiry date *</label>
-                            <input name="expiry_date" type="date" required defaultValue={item.expiry_date} style={inputStyle} />
-                          </div>
-                        </div>
-                        <div style={{ marginBottom: '12px' }}>
-                          <label style={labelSt}>Title *</label>
-                          <input name="title" type="text" required defaultValue={item.title} style={inputStyle} />
-                        </div>
-                        <div style={{ marginBottom: '12px' }}>
-                          <label style={labelSt}>Notes</label>
-                          <textarea name="notes" rows={2} defaultValue={item.notes ?? ''} style={{ ...inputStyle, resize: 'vertical' as const }} />
-                        </div>
-                        <div style={{ marginBottom: '16px' }}>
-                          <label style={labelSt}>Document link</label>
-                          <input name="document_url" type="url" defaultValue={item.document_url ?? ''} placeholder="Paste document link for now" style={inputStyle} />
-                        </div>
-                        <button type="submit" style={{ padding: '7px 18px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                          Save changes
-                        </button>
-                      </form>
-                    </div>
-                  </details>
+                  {/* ── Edit / renew form (client component) ── */}
+                  <ComplianceEditForm item={item} propertyId={id} />
 
                 </div>
               )
@@ -483,7 +344,7 @@ export default async function PropertyDetailPage({
           )}
         </div>
 
-        {/* Set up / edit plan */}
+        {/* Set up / edit plan — no file upload, stays as server action */}
         <details style={{ marginBottom: '16px' }}>
           <summary style={{ listStyle: 'none', display: 'inline-flex', alignItems: 'center', padding: '7px 16px', background: epcPlan ? 'transparent' : 'hsl(var(--color-green))', color: epcPlan ? 'hsl(var(--color-ink-subtle))' : 'white', border: epcPlan ? '1px solid hsl(var(--color-border))' : 'none', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
             {epcPlan ? 'Edit EPC plan' : '+ Set up EPC plan'}
@@ -581,49 +442,8 @@ export default async function PropertyDetailPage({
               </div>
             </div>
 
-            {/* Add work */}
-            <details style={{ marginBottom: '16px' }}>
-              <summary style={{ listStyle: 'none', display: 'inline-flex', alignItems: 'center', padding: '7px 16px', background: 'hsl(var(--color-green))', color: 'white', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
-                + Add completed work
-              </summary>
-              <div style={{ marginTop: '12px', ...card }}>
-                <form action={addEpcWorkAction}>
-                  <input type="hidden" name="property_id" value={id} />
-                  <input type="hidden" name="epc_plan_id" value={epcPlan.id} />
-                  <div style={{ marginBottom: '14px' }}>
-                    <label style={labelSt}>Work completed *</label>
-                    <input name="work_completed" type="text" required placeholder="e.g. Loft insulation installed" style={inputStyle} />
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                    <div>
-                      <label style={labelSt}>Cost (£) *</label>
-                      <input name="cost" type="number" required min="0" step="0.01" placeholder="0.00" style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelSt}>Date completed</label>
-                      <input name="completed_date" type="date" style={inputStyle} />
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                    <div>
-                      <label style={labelSt}>Contractor</label>
-                      <input name="contractor" type="text" placeholder="Company or name" style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelSt}>Receipt URL</label>
-                      <input name="receipt_url" type="url" placeholder="https://…" style={inputStyle} />
-                    </div>
-                  </div>
-                  <div style={{ marginBottom: '18px' }}>
-                    <label style={labelSt}>Notes</label>
-                    <textarea name="notes" rows={2} style={{ ...inputStyle, resize: 'vertical' as const }} />
-                  </div>
-                  <button type="submit" style={{ padding: '8px 20px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                    Save work
-                  </button>
-                </form>
-              </div>
-            </details>
+            {/* Add work — client component handles file upload */}
+            <EpcWorkAddForm propertyId={id} planId={epcPlan.id} />
 
             {/* Works list */}
             {epcWorks.length === 0 ? (
