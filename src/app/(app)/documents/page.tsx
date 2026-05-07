@@ -1,4 +1,40 @@
 import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+import { DeleteDocButton } from '@/components/documents/DeleteDocButton'
+
+// ─────────────────────────────────────────────────────────────
+// Server actions
+// ─────────────────────────────────────────────────────────────
+
+async function clearComplianceDoc(id: string) {
+  'use server'
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase
+    .from('compliance_items')
+    .update({ document_url: null })
+    .eq('id', id)
+    .eq('user_id', user.id)
+  revalidatePath('/documents')
+}
+
+async function clearEpcReceipt(id: string) {
+  'use server'
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase
+    .from('epc_works')
+    .update({ receipt_url: null })
+    .eq('id', id)
+    .eq('user_id', user.id)
+  revalidatePath('/documents')
+}
+
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
 
 const complianceTypeLabel: Record<string, string> = {
   gas:       'Gas Safety',
@@ -6,6 +42,10 @@ const complianceTypeLabel: Record<string, string> = {
   epc:       'EPC',
   insurance: 'Insurance',
 }
+
+// ─────────────────────────────────────────────────────────────
+// Page
+// ─────────────────────────────────────────────────────────────
 
 export default async function DocumentsPage() {
   const supabase = await createClient()
@@ -22,7 +62,7 @@ export default async function DocumentsPage() {
       .eq('user_id', user!.id),
     supabase
       .from('compliance_items')
-      .select('id, property_id, type, title, expiry_date, document_url, updated_at, created_at')
+      .select('id, property_id, type, title, document_url, updated_at, created_at')
       .eq('user_id', user!.id)
       .not('document_url', 'is', null)
       .order('created_at', { ascending: false }),
@@ -39,7 +79,8 @@ export default async function DocumentsPage() {
   )
 
   type DocRow = {
-    id:         string
+    id:         string   // prefixed key for React
+    rawId:      string   // actual DB uuid
     kind:       'compliance' | 'epc'
     title:      string
     subLabel:   string | null
@@ -50,6 +91,7 @@ export default async function DocumentsPage() {
 
   const complianceDocs: DocRow[] = (complianceData ?? []).map((c) => ({
     id:         `c-${c.id}`,
+    rawId:      c.id,
     kind:       'compliance',
     title:      c.title,
     subLabel:   complianceTypeLabel[c.type] ?? c.type,
@@ -60,6 +102,7 @@ export default async function DocumentsPage() {
 
   const epcDocs: DocRow[] = (epcWorksData ?? []).map((w) => ({
     id:         `e-${w.id}`,
+    rawId:      w.id,
     kind:       'epc',
     title:      w.work_completed,
     subLabel:   null,
@@ -125,6 +168,14 @@ export default async function DocumentsPage() {
             const kindColor  = doc.kind === 'compliance' ? 'hsl(var(--color-green))' : 'hsl(38 92% 40%)'
             const kindBorder = doc.kind === 'compliance' ? 'hsl(var(--color-green-muted))' : 'hsl(38 92% 70%)'
             const kindLabel  = doc.kind === 'compliance' ? 'Compliance' : 'EPC Receipt'
+
+            const deleteAction = doc.kind === 'compliance'
+              ? clearComplianceDoc.bind(null, doc.rawId)
+              : clearEpcReceipt.bind(null, doc.rawId)
+
+            const confirmMessage = doc.kind === 'compliance'
+              ? 'Remove this document? The compliance item will be kept but the file link will be cleared.'
+              : 'Remove this receipt? The EPC work record will be kept but the file link will be cleared.'
 
             return (
               <div
@@ -195,12 +246,15 @@ export default async function DocumentsPage() {
                   </p>
                 </div>
 
-                {/* View button */}
-                {doc.url ? (
-                  <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, padding: '6px 14px', background: 'hsl(var(--color-green-subtle))', color: 'hsl(var(--color-green))', border: '1px solid hsl(var(--color-green-muted))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
-                    View
-                  </a>
-                ) : null}
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
+                  {doc.url ? (
+                    <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ padding: '6px 14px', background: 'hsl(var(--color-green-subtle))', color: 'hsl(var(--color-green))', border: '1px solid hsl(var(--color-green-muted))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                      View
+                    </a>
+                  ) : null}
+                  <DeleteDocButton action={deleteAction} confirmMessage={confirmMessage} />
+                </div>
               </div>
             )
           })}

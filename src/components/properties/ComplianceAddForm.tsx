@@ -57,7 +57,7 @@ export function ComplianceAddForm({ propertyId }: { propertyId: string }) {
 
     const { error: dbError } = await supabase.from('compliance_items').insert({
       user_id: user.id, property_id: propertyId,
-      type, title, expiry_date, notes, document_url, status: 'active',
+      type, title, expiry_date, notes, document_url, status: 'valid',
     })
     if (dbError) { setError(dbError.message); setPending(false); return }
 
@@ -78,10 +78,13 @@ export function ComplianceAddForm({ propertyId }: { propertyId: string }) {
               <label style={labelSt}>Type *</label>
               <select name="type" required style={{ ...inputStyle, cursor: 'pointer' }}>
                 <option value="">Select…</option>
-                <option value="gas">Gas Safety</option>
+                <option value="gas_safety">Gas Safety</option>
                 <option value="eicr">Electrical (EICR)</option>
                 <option value="epc">EPC</option>
-                <option value="insurance">Insurance</option>
+                <option value="landlord_insurance">Landlord Insurance</option>
+                <option value="smoke_alarms">Smoke Alarms</option>
+                <option value="deposit_protection">Deposit Protection</option>
+                <option value="other">Other</option>
               </select>
             </div>
             <div>

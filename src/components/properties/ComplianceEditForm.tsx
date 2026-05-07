@@ -81,10 +81,10 @@ export function ComplianceEditForm({ item, propertyId }: { item: Item; propertyI
             <div>
               <label style={labelSt}>Type *</label>
               <select name="type" required defaultValue={item.type} style={{ ...inputStyle, cursor: 'pointer' }}>
-                <option value="gas">Gas Safety</option>
+                <option value="gas_safety">Gas Safety</option>
                 <option value="eicr">Electrical (EICR)</option>
                 <option value="epc">EPC</option>
-                <option value="insurance">Insurance</option>
+                <option value="landlord_insurance">Insurance</option>
               </select>
             </div>
             <div>
