@@ -120,8 +120,8 @@ interface PropertyDocRow {
 // Helpers
 // ─────────────────────────────────────────────────────────────
 
-const typeLabel = complianceTypeLabel as Record<string, string>
-const typeIcon = complianceTypeIcon as Record<string, string>
+const typeLabel = complianceTypeLabel
+const typeIcon = complianceTypeIcon
 
 function fileIcon(fileType: string | null): string {
   if (!fileType) return '📄'
@@ -213,8 +213,8 @@ export default async function PropertyDetailPage({
         id: `compliance-${c.id}`,
         rawId: c.id,
         label: c.title,
-        subLabel: typeLabel[c.type] ?? c.type,
-        icon: typeIcon[c.type] ?? '📋',
+        subLabel: typeLabel(c.type),
+        icon: typeIcon(c.type),
         url: c.document_url,
         date: c.updated_at ?? c.created_at,
         kind: 'compliance',
@@ -374,7 +374,7 @@ export default async function PropertyDetailPage({
           </span>
         </div>
 
-        <ComplianceAddForm propertyId={id} userId={user!.id} />
+        <ComplianceAddForm propertyId={id} />
 
         {compliance.length === 0 ? (
           <div style={{ ...card, textAlign: 'center', padding: '32px 24px' }}>
@@ -394,7 +394,7 @@ export default async function PropertyDetailPage({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' as const }}>
                         <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>{item.title}</p>
                         <span style={{ padding: '1px 7px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, background: 'hsl(var(--color-surface-muted))', color: 'hsl(var(--color-ink-subtle))', border: '1px solid hsl(var(--color-border))' }}>
-                          {typeLabel[item.type] ?? item.type}
+                          {typeLabel(item.type) ?? item.type}
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' as const }}>
@@ -422,7 +422,7 @@ export default async function PropertyDetailPage({
                   </div>
 
                   {/* ── Edit / renew form (client component) ── */}
-                  <ComplianceEditForm item={item} propertyId={id} userId={user!.id} />
+                  <ComplianceEditForm item={item} propertyId={id} />
 
                 </div>
               )
@@ -617,7 +617,7 @@ export default async function PropertyDetailPage({
             </div>
 
             {/* Add work — client component handles file upload */}
-            <EpcWorkAddForm propertyId={id} epcPlanId={epcPlan.id} userId={user!.id} />
+            <EpcWorkAddForm propertyId={id} planId={epcPlan.id} />
 
             {/* Works list */}
             {epcWorks.length === 0 ? (
