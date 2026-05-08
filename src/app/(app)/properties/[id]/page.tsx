@@ -6,6 +6,8 @@ import { DeletePropertyButton } from '@/components/properties/DeletePropertyButt
 import { ComplianceAddForm } from '@/components/properties/ComplianceAddForm'
 import { ComplianceEditForm } from '@/components/properties/ComplianceEditForm'
 import { EpcWorkAddForm } from '@/components/properties/EpcWorkAddForm'
+import { PropertyDocUploadForm } from '@/components/properties/PropertyDocUploadForm'
+import { complianceTypeLabel, complianceTypeIcon } from '@/lib/compliance-types'
 import type { Property } from '@/types/property'
 
 // ─────────────────────────────────────────────────────────────
@@ -85,6 +87,7 @@ interface Tenant {
 interface ComplianceItem {
   id: string; type: string; title: string; status: string
   expiry_date: string; notes: string | null; document_url: string | null
+  updated_at: string | null; created_at: string
 }
 interface EpcPlan {
   id: string; current_rating: string; target_rating: string
@@ -93,15 +96,40 @@ interface EpcPlan {
 interface EpcWork {
   id: string; work_completed: string; cost: number
   completed_date: string | null; contractor: string | null
-  notes: string | null; receipt_url: string | null
+  notes: string | null; receipt_url: string | null; created_at: string
+}
+interface RawDoc {
+  id: string; file_name: string; file_path: string
+  file_type: string | null; uploaded_at: string
+}
+interface GeneralDoc extends RawDoc {
+  signedUrl: string | null
+}
+interface PropertyDocRow {
+  id: string
+  rawId: string
+  label: string
+  subLabel: string
+  icon: string
+  url: string | null
+  date: string
+  kind: 'compliance' | 'epc' | 'general'
 }
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────
 
-const complianceTypeLabel: Record<string, string> = {
-  gas: 'Gas Safety', eicr: 'Electrical (EICR)', epc: 'EPC', insurance: 'Insurance',
+const typeLabel = complianceTypeLabel as Record<string, string>
+const typeIcon = complianceTypeIcon as Record<string, string>
+
+function fileIcon(fileType: string | null): string {
+  if (!fileType) return '📄'
+  if (fileType.includes('pdf')) return '📕'
+  if (fileType.includes('image')) return '🖼️'
+  if (fileType.includes('word') || fileType.includes('document')) return '📝'
+  if (fileType.includes('sheet') || fileType.includes('excel')) return '📊'
+  return '📄'
 }
 
 function expiryBadge(dateStr: string) {
@@ -140,19 +168,22 @@ export default async function PropertyDetailPage({
     { data: complianceData },
     { data: epcPlanData },
     { data: epcWorksData },
+    { data: documentsData },
   ] = await Promise.all([
     supabase.from('properties').select('*').eq('id', id).eq('user_id', user!.id).single(),
     supabase.from('tenants')
       .select('id, full_name, rent_amount, start_date, email, phone')
       .eq('property_id', id).eq('user_id', user!.id).eq('status', 'active').maybeSingle(),
     supabase.from('compliance_items')
-      .select('id, type, title, status, expiry_date, notes, document_url')
+      .select('id, type, title, status, expiry_date, notes, document_url, updated_at, created_at')
       .eq('property_id', id).eq('user_id', user!.id).order('expiry_date'),
     supabase.from('epc_plans').select('*')
       .eq('property_id', id).eq('user_id', user!.id)
       .order('created_at', { ascending: false }).maybeSingle(),
     supabase.from('epc_works').select('*')
       .eq('property_id', id).eq('user_id', user!.id).order('created_at'),
+    supabase.from('property_documents').select('*')
+      .eq('property_id', id).eq('user_id', user!.id).order('created_at', { ascending: false }),
   ])
 
   if (!property) {
@@ -164,6 +195,73 @@ export default async function PropertyDetailPage({
   const compliance = (complianceData ?? []) as ComplianceItem[]
   const epcPlan    = epcPlanData   as EpcPlan       | null
   const epcWorks   = (epcWorksData ?? []) as EpcWork[]
+  const rawDocs    = (documentsData ?? []) as RawDoc[]
+
+  const generalDocs: GeneralDoc[] = await Promise.all(
+    rawDocs.map(async (doc) => {
+      const { data } = await supabase.storage
+        .from('documents')
+        .createSignedUrl(doc.file_path, 31_536_000)
+      return { ...doc, signedUrl: data?.signedUrl ?? null }
+    })
+  )
+
+  const docsRows: PropertyDocRow[] = [
+    ...compliance
+      .filter((c) => c.document_url)
+      .map((c): PropertyDocRow => ({
+        id: `compliance-${c.id}`,
+        rawId: c.id,
+        label: c.title,
+        subLabel: typeLabel[c.type] ?? c.type,
+        icon: typeIcon[c.type] ?? '📋',
+        url: c.document_url,
+        date: c.updated_at ?? c.created_at,
+        kind: 'compliance',
+      })),
+    ...epcWorks
+      .filter((w) => w.receipt_url)
+      .map((w): PropertyDocRow => ({
+        id: `epc-${w.id}`,
+        rawId: w.id,
+        label: w.work_completed,
+        subLabel: 'EPC receipt',
+        icon: '🏠',
+        url: w.receipt_url,
+        date: w.created_at,
+        kind: 'epc',
+      })),
+    ...generalDocs.map((d): PropertyDocRow => ({
+      id: `doc-${d.id}`,
+      rawId: d.id,
+      label: d.file_name,
+      subLabel: 'General document',
+      icon: fileIcon(d.file_type),
+      url: d.signedUrl,
+      date: d.uploaded_at,
+      kind: 'general',
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  async function deleteGeneralDocAction(docId: string) {
+    'use server'
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data: doc } = await supabase
+      .from('documents')
+      .select('file_path')
+      .eq('id', docId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (!doc) return
+
+    await supabase.storage.from('documents').remove([doc.file_path])
+    await supabase.from('documents').delete().eq('id', docId).eq('user_id', user.id)
+    revalidatePath(`/properties/${id}`)
+  }
 
   const totalSpend = epcWorks.reduce((s, w) => s + (w.cost ?? 0), 0)
   const cap        = epcPlan?.cap_amount ?? 10000
@@ -276,7 +374,7 @@ export default async function PropertyDetailPage({
           </span>
         </div>
 
-        <ComplianceAddForm propertyId={id} />
+        <ComplianceAddForm propertyId={id} userId={user!.id} />
 
         {compliance.length === 0 ? (
           <div style={{ ...card, textAlign: 'center', padding: '32px 24px' }}>
@@ -296,7 +394,7 @@ export default async function PropertyDetailPage({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' as const }}>
                         <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>{item.title}</p>
                         <span style={{ padding: '1px 7px', borderRadius: '999px', fontSize: '11px', fontWeight: 600, background: 'hsl(var(--color-surface-muted))', color: 'hsl(var(--color-ink-subtle))', border: '1px solid hsl(var(--color-border))' }}>
-                          {complianceTypeLabel[item.type] ?? item.type}
+                          {typeLabel[item.type] ?? item.type}
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' as const }}>
@@ -324,11 +422,87 @@ export default async function PropertyDetailPage({
                   </div>
 
                   {/* ── Edit / renew form (client component) ── */}
-                  <ComplianceEditForm item={item} propertyId={id} />
+                  <ComplianceEditForm item={item} propertyId={id} userId={user!.id} />
 
                 </div>
               )
             })}
+          </div>
+        )}
+      </section>
+
+
+      {/* ── Documents ──────────────────────────────────────── */}
+      <section style={{ marginTop: '32px' }}>
+        <div style={sectionHead}>
+          <h2 style={h2Style}>Documents</h2>
+          <span style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))' }}>
+            {docsRows.length} {docsRows.length === 1 ? 'file' : 'files'}
+          </span>
+        </div>
+
+        <div style={card}>
+          <PropertyDocUploadForm propertyId={id} userId={user!.id} />
+        </div>
+
+        {docsRows.length === 0 ? (
+          <div style={{ ...card, textAlign: 'center', padding: '32px 24px', marginTop: '16px' }}>
+            <p style={{ fontSize: '14px', fontWeight: 500, color: 'hsl(var(--color-ink))', marginBottom: '4px' }}>No documents yet</p>
+            <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>
+              Upload files above, or attach documents via the compliance and EPC sections.
+            </p>
+          </div>
+        ) : (
+          <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden', marginTop: '16px' }}>
+            {docsRows.map((row, index) => (
+              <div
+                key={row.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  padding: '12px 20px',
+                  borderBottom: index < docsRows.length - 1 ? '1px solid hsl(var(--color-border))' : 'none',
+                }}
+              >
+                <span style={{ fontSize: '20px', flexShrink: 0 }}>{row.icon}</span>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-ink))', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {row.label}
+                  </p>
+                  <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))' }}>
+                    {row.subLabel}
+                    {' · '}
+                    {new Date(row.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
+                  {row.url ? (
+                    <a
+                      href={row.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 600, color: 'hsl(var(--color-green))', background: 'hsl(var(--color-green-subtle))', border: '1px solid hsl(var(--color-green-muted))', borderRadius: 'var(--radius-sm)', textDecoration: 'none' }}
+                    >
+                      Open
+                    </a>
+                  ) : null}
+
+                  {row.kind === 'general' ? (
+                    <form action={deleteGeneralDocAction.bind(null, row.rawId)}>
+                      <button
+                        type="submit"
+                        style={{ padding: '4px 10px', background: 'transparent', color: 'hsl(var(--color-ink-subtle))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        Delete
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>
@@ -443,7 +617,7 @@ export default async function PropertyDetailPage({
             </div>
 
             {/* Add work — client component handles file upload */}
-            <EpcWorkAddForm propertyId={id} planId={epcPlan.id} />
+            <EpcWorkAddForm propertyId={id} epcPlanId={epcPlan.id} userId={user!.id} />
 
             {/* Works list */}
             {epcWorks.length === 0 ? (
