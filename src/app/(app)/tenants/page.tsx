@@ -26,6 +26,17 @@ interface Tenant {
   created_at: string
 }
 
+interface RentPayment {
+  id: string
+  tenant_id: string
+  payment_month: string
+  amount_due: number
+  amount_paid: number
+  paid: boolean
+  paid_date: string | null
+}
+
+
 const statusLabel: Record<Tenant['status'], string> = {
   active: 'Active',
   notice: 'Notice given',
@@ -110,6 +121,7 @@ export default function TenantsPage() {
 
   const [properties,  setProperties]  = useState<Property[]>([])
   const [tenants,     setTenants]     = useState<Tenant[]>([])
+  const [payments,    setPayments]    = useState<RentPayment[]>([])
   const [loading,     setLoading]     = useState(true)
   const [saving,      setSaving]      = useState(false)
   const [formError,   setFormError]   = useState<string | null>(null)
@@ -133,7 +145,10 @@ export default function TenantsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
 
-      const [{ data: props }, { data: tens }] = await Promise.all([
+      const currentMonth = new Date()
+      currentMonth.setDate(1)
+
+      const [{ data: props }, { data: tens }, { data: pays }] = await Promise.all([
         supabase
           .from('properties')
           .select('id, address_line_1, town')
@@ -144,10 +159,16 @@ export default function TenantsPage() {
           .select('*')
           .eq('user_id', user.id)
           .order('created_at'),
+        supabase
+          .from('rent_payments')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('payment_month', currentMonth.toISOString().split('T')[0]),
       ])
 
       if (props) setProperties(props)
       if (tens)  setTenants(tens)
+      if (pays)  setPayments(pays)
       setLoading(false)
     }
     load()
@@ -156,6 +177,11 @@ export default function TenantsPage() {
   const propertyMap = Object.fromEntries(
     properties.map((p) => [p.id, `${p.address_line_1}, ${p.town}`])
   )
+
+  const paymentMap = Object.fromEntries(
+    payments.map((p) => [p.tenant_id, p])
+  )
+
 
   function resetForm() {
     setFullName(''); setPropId(''); setRentAmount(''); setRentDueDay('')
@@ -235,6 +261,54 @@ export default function TenantsPage() {
 
     setSaving(false)
     closeForm()
+  }
+
+
+  async function markPaid(t: Tenant) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const month = new Date()
+    month.setDate(1)
+
+    const payload = {
+      user_id: user.id,
+      tenant_id: t.id,
+      payment_month: month.toISOString().split('T')[0],
+      amount_due: t.rent_amount,
+      amount_paid: t.rent_amount,
+      paid: true,
+      paid_date: new Date().toISOString().split('T')[0],
+    }
+
+    const existing = paymentMap[t.id]
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from('rent_payments')
+        .update(payload)
+        .eq('id', existing.id)
+        .select()
+        .single()
+
+      if (!error && data) {
+        setPayments((prev) =>
+          prev.map((p) => p.id === existing.id ? data : p)
+        )
+      }
+
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('rent_payments')
+      .insert(payload)
+      .select()
+      .single()
+
+    if (!error && data) {
+      setPayments((prev) => [...prev, data])
+    }
   }
 
   async function deleteTenant(id: string) {
@@ -517,7 +591,11 @@ export default function TenantsPage() {
                     Dep. {formatCurrency(t.deposit)}
                   </p>
                 )}
-                {(() => {
+                {paymentMap[t.id]?.paid ? (
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: 'hsl(var(--color-green))' }}>
+                    Paid this month
+                  </p>
+                ) : (() => {
                   const rs = getRentStatus(t)
                   return (
                     <p style={{ fontSize: '11px', fontWeight: 600, color: rs.colour }}>
@@ -528,6 +606,15 @@ export default function TenantsPage() {
               </div>
 
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                {!paymentMap[t.id]?.paid && t.status === 'active' && (
+                  <button
+                    onClick={() => markPaid(t)}
+                    style={{ padding: '6px 14px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Mark paid
+                  </button>
+                )}
+
                 <button
                   onClick={() => openEdit(t)}
                   style={{ padding: '6px 14px', background: 'transparent', color: 'hsl(var(--color-ink-subtle))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
