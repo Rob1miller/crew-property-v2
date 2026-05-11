@@ -165,12 +165,14 @@ export default async function DashboardPage() {
   // ── Stat cards ───────────────────────────────────────────
 
   const stats = [
-    { label: 'Properties',              value: properties.length,                     warn: false },
-    { label: 'Active tenants',          value: activeTenants.length,                  warn: false },
-    { label: 'Monthly rent',            value: fmt(monthlyRent),                      warn: false },
-    { label: 'Vacant',                  value: vacantProperties.length,               warn: vacantProperties.length > 0 },
-    { label: 'Compliance expiring soon',value: expiringCompliance.length,             warn: expiringCompliance.length > 0 },
-    { label: 'Expired compliance',      value: expiredCompliance.length,              warn: expiredCompliance.length > 0 },
+    { label: 'Properties',               value: properties.length,             warn: false },
+    { label: 'Active tenants',           value: activeTenants.length,          warn: false },
+    { label: 'Monthly rent',             value: fmt(monthlyRent),              warn: false },
+    { label: 'Vacant',                   value: vacantProperties.length,       warn: vacantProperties.length > 0 },
+    { label: 'Compliance expiring soon', value: expiringCompliance.length,     warn: expiringCompliance.length > 0 },
+    { label: 'Expired compliance',       value: expiredCompliance.length,      warn: expiredCompliance.length > 0 },
+    { label: 'EPC below C',              value: belowCPlans.length,            warn: belowCPlans.length > 0 },
+    { label: 'Missing EPC plan',         value: propertiesNoEpcPlan.length,    warn: propertiesNoEpcPlan.length > 0 },
   ]
 
   return (
@@ -196,6 +198,22 @@ export default async function DashboardPage() {
             </p>
           </div>
         ))}
+      </div>
+
+      {/* Quick actions */}
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '32px' }}>
+        <Link href="/properties" style={{ padding: '10px 14px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-ink))', textDecoration: 'none' }}>
+          Manage properties →
+        </Link>
+        <Link href="/compliance" style={{ padding: '10px 14px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-ink))', textDecoration: 'none' }}>
+          Review compliance →
+        </Link>
+        <Link href="/epc" style={{ padding: '10px 14px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-ink))', textDecoration: 'none' }}>
+          EPC planner →
+        </Link>
+        <Link href="/documents" style={{ padding: '10px 14px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-ink))', textDecoration: 'none' }}>
+          Documents →
+        </Link>
       </div>
 
       {/* Alerts */}
