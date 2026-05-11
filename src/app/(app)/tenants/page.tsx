@@ -76,6 +76,35 @@ const emptyState: React.CSSProperties = {
   color:        'hsl(var(--color-ink-subtle))',
 }
 
+
+function getRentStatus(t: Tenant) {
+  if (t.status !== 'active') return { label: 'Inactive', colour: 'hsl(var(--color-ink-subtle))', urgent: false }
+
+  const dueDay = t.rent_due_day ?? 1
+  const today = new Date()
+  const currentDay = today.getDate()
+
+  if (currentDay > dueDay + 7) {
+    return { label: 'Check rent', colour: 'hsl(var(--color-red))', urgent: true }
+  }
+
+  if (currentDay > dueDay) {
+    return { label: 'Due this month', colour: 'hsl(var(--color-amber))', urgent: true }
+  }
+
+  return { label: `Due ${dueDay}${ordinalSuffix(dueDay)}`, colour: 'hsl(var(--color-green))', urgent: false }
+}
+
+function ordinalSuffix(n: number) {
+  if (n > 3 && n < 21) return 'th'
+  switch (n % 10) {
+    case 1: return 'st'
+    case 2: return 'nd'
+    case 3: return 'rd'
+    default: return 'th'
+  }
+}
+
 export default function TenantsPage() {
   const supabase = createClient()
 
@@ -221,6 +250,8 @@ export default function TenantsPage() {
   const active       = tenants.filter((t) => t.status === 'active')
   const totalRent    = active.reduce((s, t) => s + t.rent_amount, 0)
   const totalDeposit = tenants.reduce((s, t) => s + (t.deposit ?? 0), 0)
+  const rentRisk     = active.filter((t) => getRentStatus(t).urgent)
+  const rentRiskTotal = rentRisk.reduce((s, t) => s + t.rent_amount, 0)
 
   if (loading) {
     return (
@@ -251,12 +282,14 @@ export default function TenantsPage() {
       </div>
 
       {tenants.length > 0 && (
-        <div className="grid grid-cols-4 gap-px mb-6 bg-border border border-border rounded-lg overflow-hidden">
+        <div className="grid grid-cols-6 gap-px mb-6 bg-border border border-border rounded-lg overflow-hidden">
           {[
             { label: 'Total',          value: tenants.length },
             { label: 'Active',         value: `${active.length} / ${tenants.length}` },
             { label: 'Monthly rent',   value: formatCurrency(totalRent) },
             { label: 'Total deposits', value: formatCurrency(totalDeposit) },
+            { label: 'Rent to check',  value: rentRisk.length },
+            { label: 'Risk value',     value: formatCurrency(rentRiskTotal) },
           ].map((s) => (
             <div key={s.label} className="bg-surface px-5 py-4">
               <p className="text-[11px] font-bold text-ink-subtle uppercase tracking-[0.6px] mb-1.5">{s.label}</p>
@@ -484,6 +517,14 @@ export default function TenantsPage() {
                     Dep. {formatCurrency(t.deposit)}
                   </p>
                 )}
+                {(() => {
+                  const rs = getRentStatus(t)
+                  return (
+                    <p style={{ fontSize: '11px', fontWeight: 600, color: rs.colour }}>
+                      {rs.label}
+                    </p>
+                  )
+                })()}
               </div>
 
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
