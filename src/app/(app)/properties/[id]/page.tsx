@@ -7,6 +7,7 @@ import { ComplianceAddForm } from '@/components/properties/ComplianceAddForm'
 import { ComplianceEditForm } from '@/components/properties/ComplianceEditForm'
 import { EpcWorkAddForm } from '@/components/properties/EpcWorkAddForm'
 import { PropertyDocUploadForm } from '@/components/properties/PropertyDocUploadForm'
+import { PropertyNotes } from '@/components/properties/PropertyNotes'
 import { complianceTypeLabel, complianceTypeIcon } from '@/lib/compliance-types'
 import type { Property } from '@/types/property'
 
@@ -506,6 +507,9 @@ export default async function PropertyDetailPage({
           </div>
         )}
       </section>
+
+
+      <PropertyNotes propertyId={id} userId={user!.id} />
 
       {/* ── EPC Planner ────────────────────────────────────── */}
       <section style={{ marginTop: '32px', marginBottom: '48px' }}>
