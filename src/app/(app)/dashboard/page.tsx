@@ -15,6 +15,15 @@ interface Tenant {
   status: string
   rent_amount: number
 }
+
+interface RentPayment {
+  id: string
+  tenant_id: string
+  payment_month: string
+  amount_due: number
+  amount_paid: number
+  paid: boolean
+}
 interface ComplianceItem {
   id: string
   property_id: string
@@ -85,6 +94,7 @@ export default async function DashboardPage() {
     { data: tenantsData },
     { data: complianceData },
     { data: epcPlansData },
+    { data: rentPaymentsData },
   ] = await Promise.all([
     supabase
       .from('properties')
@@ -103,12 +113,17 @@ export default async function DashboardPage() {
       .from('epc_plans')
       .select('id, property_id, current_rating, target_rating')
       .eq('user_id', user!.id),
+    supabase
+      .from('rent_payments')
+      .select('id, tenant_id, payment_month, amount_due, amount_paid, paid')
+      .eq('user_id', user!.id),
   ])
 
   const properties = (propertiesData ?? []) as Property[]
   const tenants    = (tenantsData    ?? []) as Tenant[]
   const compliance = (complianceData ?? []) as ComplianceItem[]
   const epcPlans   = (epcPlansData   ?? []) as EpcPlan[]
+  const rentPayments = (rentPaymentsData ?? []) as RentPayment[]
 
   // ── Computed values ──────────────────────────────────────
 
@@ -133,6 +148,34 @@ export default async function DashboardPage() {
   const propertyAddress = (p: Property) => `${p.address_line_1}, ${p.town}`
   const propertyMap     = Object.fromEntries(properties.map((p) => [p.id, propertyAddress(p)]))
 
+  const currentMonthKey = (() => {
+    const d = new Date()
+    d.setDate(1)
+    return d.toISOString().split('T')[0]
+  })()
+
+  const currentRentPayments = rentPayments.filter((p) => p.payment_month === currentMonthKey)
+  const currentPaymentMap = Object.fromEntries(currentRentPayments.map((p) => [p.tenant_id, p]))
+
+  const unpaidTenants = activeTenants.filter((t) => {
+    const payment = currentPaymentMap[t.id]
+    return !payment || Number(payment.amount_paid ?? 0) <= 0
+  })
+
+  const partialTenants = activeTenants.filter((t) => {
+    const payment = currentPaymentMap[t.id]
+    if (!payment) return false
+    const paid = Number(payment.amount_paid ?? 0)
+    const due = Number(payment.amount_due ?? t.rent_amount ?? 0)
+    return paid > 0 && paid < due
+  })
+
+  const currentArrears = activeTenants.reduce((sum, t) => {
+    const payment = currentPaymentMap[t.id]
+    if (!payment) return sum + Number(t.rent_amount ?? 0)
+    return sum + Math.max(0, Number(payment.amount_due ?? t.rent_amount ?? 0) - Number(payment.amount_paid ?? 0))
+  }, 0)
+
   // ── Build alerts ─────────────────────────────────────────
 
   const alerts: Alert[] = []
@@ -148,16 +191,26 @@ export default async function DashboardPage() {
     alerts.push({ level: 'warning', urgencyRank: 1, message: `${label} expires in ${days} day${days !== 1 ? 's' : ''}`, propertyId: c.property_id, propertyAddress: propertyMap[c.property_id] ?? 'Unknown property' })
   }
 
+  for (const t of unpaidTenants) {
+    alerts.push({ level: 'urgent', urgencyRank: 2, message: `Rent unpaid this month — ${fmt(t.rent_amount)}`, propertyId: t.property_id, propertyAddress: propertyMap[t.property_id] ?? 'Unknown property' })
+  }
+
+  for (const t of partialTenants) {
+    const payment = currentPaymentMap[t.id]
+    const shortfall = Math.max(0, Number(payment.amount_due ?? t.rent_amount ?? 0) - Number(payment.amount_paid ?? 0))
+    alerts.push({ level: 'warning', urgencyRank: 3, message: `Partial rent paid — ${fmt(shortfall)} outstanding`, propertyId: t.property_id, propertyAddress: propertyMap[t.property_id] ?? 'Unknown property' })
+  }
+
   for (const p of vacantProperties) {
-    alerts.push({ level: 'warning', urgencyRank: 2, message: 'Property is vacant', propertyId: p.id, propertyAddress: propertyAddress(p) })
+    alerts.push({ level: 'warning', urgencyRank: 4, message: 'Property is vacant', propertyId: p.id, propertyAddress: propertyAddress(p) })
   }
 
   for (const plan of belowCPlans) {
-    alerts.push({ level: 'warning', urgencyRank: 3, message: `EPC rating ${plan.current_rating} — target ${plan.target_rating}`, propertyId: plan.property_id, propertyAddress: propertyMap[plan.property_id] ?? 'Unknown property' })
+    alerts.push({ level: 'warning', urgencyRank: 5, message: `EPC rating ${plan.current_rating} — target ${plan.target_rating}`, propertyId: plan.property_id, propertyAddress: propertyMap[plan.property_id] ?? 'Unknown property' })
   }
 
   for (const p of propertiesNoEpcPlan) {
-    alerts.push({ level: 'info', urgencyRank: 4, message: 'No EPC plan set up', propertyId: p.id, propertyAddress: propertyAddress(p) })
+    alerts.push({ level: 'info', urgencyRank: 6, message: 'No EPC plan set up', propertyId: p.id, propertyAddress: propertyAddress(p) })
   }
 
   alerts.sort((a, b) => a.urgencyRank - b.urgencyRank)
@@ -173,6 +226,9 @@ export default async function DashboardPage() {
     { label: 'Expired compliance',       value: expiredCompliance.length,      warn: expiredCompliance.length > 0 },
     { label: 'EPC below C',              value: belowCPlans.length,            warn: belowCPlans.length > 0 },
     { label: 'Missing EPC plan',         value: propertiesNoEpcPlan.length,    warn: propertiesNoEpcPlan.length > 0 },
+    { label: 'Unpaid rent',              value: unpaidTenants.length,           warn: unpaidTenants.length > 0 },
+    { label: 'Partial rent',             value: partialTenants.length,          warn: partialTenants.length > 0 },
+    { label: 'Current arrears',          value: fmt(currentArrears),            warn: currentArrears > 0 },
   ]
 
   return (
