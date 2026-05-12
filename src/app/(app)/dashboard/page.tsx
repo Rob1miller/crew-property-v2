@@ -27,6 +27,15 @@ interface RentPayment {
   amount_paid: number
   paid: boolean
 }
+
+interface ActivityLog {
+  id: string
+  type: string
+  message: string
+  created_at: string
+  property_id: string | null
+  tenant_id: string | null
+}
 interface ComplianceItem {
   id: string
   property_id: string
@@ -100,6 +109,7 @@ export default async function DashboardPage() {
     { data: complianceData },
     { data: epcPlansData },
     { data: rentPaymentsData },
+    { data: activityLogsData },
   ] = await Promise.all([
     supabase
       .from('properties')
@@ -122,6 +132,12 @@ export default async function DashboardPage() {
       .from('rent_payments')
       .select('id, tenant_id, payment_month, amount_due, amount_paid, paid')
       .eq('user_id', user!.id),
+    supabase
+      .from('activity_logs')
+      .select('id, type, message, created_at, property_id, tenant_id')
+      .eq('user_id', user!.id)
+      .order('created_at', { ascending: false })
+      .limit(10),
   ])
 
   const properties = (propertiesData ?? []) as Property[]
@@ -129,6 +145,7 @@ export default async function DashboardPage() {
   const compliance = (complianceData ?? []) as ComplianceItem[]
   const epcPlans   = (epcPlansData   ?? []) as EpcPlan[]
   const rentPayments = (rentPaymentsData ?? []) as RentPayment[]
+  const activityLogs = (activityLogsData ?? []) as ActivityLog[]
 
   // ── Computed values ──────────────────────────────────────
 
@@ -261,6 +278,41 @@ export default async function DashboardPage() {
             </p>
           </div>
         ))}
+      </div>
+
+      {/* Recent activity */}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>Recent activity</h2>
+          <span style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))' }}>
+            Last {activityLogs.length}
+          </span>
+        </div>
+
+        {activityLogs.length === 0 ? (
+          <div style={{ padding: '22px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)' }}>
+            <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>No activity logged yet.</p>
+          </div>
+        ) : (
+          <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+            {activityLogs.map((log, index) => (
+              <div key={log.id} style={{ padding: '12px 16px', borderBottom: index < activityLogs.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>{log.message}</p>
+                <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))' }}>
+                  {log.type.replaceAll('_', ' ')}
+                  {' · '}
+                  {new Date(log.created_at).toLocaleString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Quick actions */}
