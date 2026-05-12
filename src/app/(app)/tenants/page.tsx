@@ -353,6 +353,44 @@ export default function TenantsPage() {
     await saveRentPayment(t, amount)
   }
 
+
+  async function generateCurrentMonthRent() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const activeTenants = tenants.filter((t) => t.status === 'active')
+    const rowsToInsert = activeTenants
+      .filter((t) => !currentPaymentMap[t.id])
+      .map((t) => ({
+        user_id: user.id,
+        tenant_id: t.id,
+        payment_month: currentMonthKey,
+        amount_due: t.rent_amount,
+        amount_paid: 0,
+        paid: false,
+        paid_date: null,
+        notes: 'Auto-generated monthly rent due',
+      }))
+
+    if (rowsToInsert.length === 0) {
+      alert('All active tenants already have rent records for this month.')
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('rent_payments')
+      .insert(rowsToInsert)
+      .select()
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    setPayments((prev) => [...(data ?? []), ...prev])
+    alert(`Generated ${rowsToInsert.length} rent record${rowsToInsert.length === 1 ? '' : 's'} for this month.`)
+  }
+
   async function deleteTenant(id: string) {
     if (!confirm('Delete this tenant? This cannot be undone.')) return
     const { error: err } = await supabase
@@ -388,6 +426,13 @@ export default function TenantsPage() {
           <p>{tenants.length} {tenants.length === 1 ? 'tenant' : 'tenants'} in your portfolio</p>
         </div>
         <div className="page-header-actions">
+          <button
+            onClick={generateCurrentMonthRent}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded border border-border bg-surface text-ink text-[13px] font-semibold hover:bg-surface-muted transition-colors duration-100"
+          >
+            Generate rent due
+          </button>
+
           <button
             onClick={openAdd}
             className="inline-flex items-center gap-2 px-4 py-2 rounded bg-green text-white text-[13px] font-semibold hover:bg-green-mid transition-colors duration-100"
