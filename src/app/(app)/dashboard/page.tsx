@@ -247,7 +247,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <DashboardSearch properties={properties} tenants={tenants} />
+      <DashboardSearch properties={properties} tenants={tenants} compliance={compliance} />
 
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', marginBottom: '32px', background: 'hsl(var(--color-border))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-lg, var(--radius))', overflow: 'hidden' }}>

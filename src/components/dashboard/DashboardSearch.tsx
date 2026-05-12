@@ -17,14 +17,28 @@ type TenantResult = {
   email: string | null
 }
 
+type ComplianceResult = {
+  id: string
+  property_id: string
+  title: string | null
+  type: string
+  expiry_date: string
+}
+
 export function DashboardSearch({
   properties,
   tenants,
+  compliance,
 }: {
   properties: PropertyResult[]
   tenants: TenantResult[]
+  compliance: ComplianceResult[]
 }) {
   const [query, setQuery] = useState('')
+
+  const propertyMap = useMemo(() => {
+    return Object.fromEntries(properties.map((p) => [p.id, `${p.address_line_1}, ${p.town}`]))
+  }, [properties])
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -58,19 +72,35 @@ export function DashboardSearch({
         id: `tenant-${t.id}`,
         type: 'Tenant',
         title: t.full_name,
-        subtitle: t.email ?? 'Tenant record',
+        subtitle: t.email ?? propertyMap[t.property_id] ?? 'Tenant record',
         href: '/tenants',
       }))
 
-    return [...propertyResults, ...tenantResults].slice(0, 8)
-  }, [query, properties, tenants])
+    const complianceResults = compliance
+      .filter((c) =>
+        [c.title, c.type, propertyMap[c.property_id]]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(q)
+      )
+      .map((c) => ({
+        id: `compliance-${c.id}`,
+        type: 'Compliance',
+        title: c.title || c.type,
+        subtitle: propertyMap[c.property_id] ?? 'Compliance item',
+        href: `/properties/${c.property_id}`,
+      }))
+
+    return [...propertyResults, ...tenantResults, ...complianceResults].slice(0, 10)
+  }, [query, properties, tenants, compliance, propertyMap])
 
   return (
     <div style={{ marginBottom: '24px' }}>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search properties or tenants..."
+        placeholder="Search properties, tenants or compliance..."
         style={{
           width: '100%',
           padding: '12px 14px',
@@ -89,7 +119,7 @@ export function DashboardSearch({
               No results found.
             </p>
           ) : (
-            results.map((r) => (
+            results.map((r, index) => (
               <Link
                 key={r.id}
                 href={r.href}
@@ -98,7 +128,7 @@ export function DashboardSearch({
                   justifyContent: 'space-between',
                   gap: '12px',
                   padding: '12px 14px',
-                  borderBottom: '1px solid hsl(var(--color-border))',
+                  borderBottom: index < results.length - 1 ? '1px solid hsl(var(--color-border))' : 'none',
                   textDecoration: 'none',
                   color: 'inherit',
                 }}
