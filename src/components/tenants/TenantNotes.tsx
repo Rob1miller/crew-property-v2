@@ -63,6 +63,13 @@ export function TenantNotes({
       return
     }
 
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      tenant_id: tenantId,
+      type: 'tenant_note_added',
+      message: `Tenant note added (${noteType}): ${note.trim().slice(0, 80)}${note.trim().length > 80 ? '…' : ''}`,
+    })
+
     setNote('')
     await loadNotes()
   }
