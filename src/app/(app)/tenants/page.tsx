@@ -290,6 +290,7 @@ export default function TenantsPage() {
     const month = new Date()
     month.setDate(1)
 
+    const monthLabel = month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
     const paidInFull = amountPaid >= t.rent_amount
 
     const payload = {
@@ -330,6 +331,28 @@ export default function TenantsPage() {
     if (!error && data) {
       setPayments((prev) => [...prev, data])
     }
+
+    const status =
+      amountPaid >= t.rent_amount
+        ? 'rent_paid'
+        : amountPaid > 0
+          ? 'rent_partial'
+          : 'rent_unpaid'
+
+    const message =
+      amountPaid >= t.rent_amount
+        ? `${t.full_name} marked as paid for ${monthLabel}`
+        : amountPaid > 0
+          ? `${t.full_name} partial rent recorded for ${monthLabel}: ${formatCurrency(amountPaid)} paid`
+          : `${t.full_name} marked as unpaid for ${monthLabel}`
+
+    await supabase.from('activity_logs').insert({
+      user_id: user.id,
+      property_id: t.property_id,
+      tenant_id: t.id,
+      type: status,
+      message,
+    })
   }
 
   async function markPaid(t: Tenant) {
@@ -388,6 +411,13 @@ export default function TenantsPage() {
     }
 
     setPayments((prev) => [...(data ?? []), ...prev])
+
+    await supabase.from('activity_logs').insert({
+      user_id: user.id,
+      type: 'rent_due_generated',
+      message: `Generated ${rowsToInsert.length} rent record${rowsToInsert.length === 1 ? '' : 's'} for this month`,
+    })
+
     alert(`Generated ${rowsToInsert.length} rent record${rowsToInsert.length === 1 ? '' : 's'} for this month.`)
   }
 
