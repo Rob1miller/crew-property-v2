@@ -69,6 +69,13 @@ export function PropertyNotes({
       return
     }
 
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      property_id: propertyId,
+      type: 'property_note_added',
+      message: `Property note added (${category}): ${note.trim().slice(0, 80)}${note.trim().length > 80 ? '…' : ''}`,
+    })
+
     setNote('')
     await loadNotes()
     startTransition(() => router.refresh())
