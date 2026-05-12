@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils/helpers'
+import { TenantNotes } from '@/components/tenants/TenantNotes'
 
 interface Property {
   id: string
@@ -719,6 +720,8 @@ export default function TenantsPage() {
                 </div>
               )}
               </div>
+
+              <TenantNotes tenantId={t.id} userId={t.user_id} />
             </div>
           ))}
         </div>
