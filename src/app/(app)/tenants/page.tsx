@@ -282,21 +282,23 @@ export default function TenantsPage() {
   }
 
 
-  async function markPaid(t: Tenant) {
+  async function saveRentPayment(t: Tenant, amountPaid: number) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
     const month = new Date()
     month.setDate(1)
 
+    const paidInFull = amountPaid >= t.rent_amount
+
     const payload = {
       user_id: user.id,
       tenant_id: t.id,
       payment_month: month.toISOString().split('T')[0],
       amount_due: t.rent_amount,
-      amount_paid: t.rent_amount,
-      paid: true,
-      paid_date: new Date().toISOString().split('T')[0],
+      amount_paid: amountPaid,
+      paid: paidInFull,
+      paid_date: amountPaid > 0 ? new Date().toISOString().split('T')[0] : null,
     }
 
     const existing = currentPaymentMap[t.id]
@@ -327,6 +329,27 @@ export default function TenantsPage() {
     if (!error && data) {
       setPayments((prev) => [...prev, data])
     }
+  }
+
+  async function markPaid(t: Tenant) {
+    await saveRentPayment(t, t.rent_amount)
+  }
+
+  async function markUnpaid(t: Tenant) {
+    await saveRentPayment(t, 0)
+  }
+
+  async function markPartial(t: Tenant) {
+    const input = prompt('How much rent was paid?')
+    if (input === null) return
+
+    const amount = Number(input)
+    if (Number.isNaN(amount) || amount < 0) {
+      alert('Please enter a valid amount.')
+      return
+    }
+
+    await saveRentPayment(t, amount)
   }
 
   async function deleteTenant(id: string) {
@@ -625,13 +648,27 @@ export default function TenantsPage() {
               </div>
 
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                {!currentPaymentMap[t.id]?.paid && t.status === 'active' && (
-                  <button
-                    onClick={() => markPaid(t)}
-                    style={{ padding: '6px 14px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
-                  >
-                    Mark paid
-                  </button>
+                {t.status === 'active' && (
+                  <>
+                    <button
+                      onClick={() => markPaid(t)}
+                      style={{ padding: '6px 14px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Paid
+                    </button>
+                    <button
+                      onClick={() => markPartial(t)}
+                      style={{ padding: '6px 14px', background: 'transparent', color: 'hsl(var(--color-amber))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Partial
+                    </button>
+                    <button
+                      onClick={() => markUnpaid(t)}
+                      style={{ padding: '6px 14px', background: 'transparent', color: 'hsl(var(--color-red))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Unpaid
+                    </button>
+                  </>
                 )}
 
                 <button
