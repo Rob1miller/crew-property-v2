@@ -163,7 +163,7 @@ export default function TenantsPage() {
           .from('rent_payments')
           .select('*')
           .eq('user_id', user.id)
-          .eq('payment_month', currentMonth.toISOString().split('T')[0]),
+          .order('payment_month', { ascending: false }),
       ])
 
       if (props) setProperties(props)
@@ -178,9 +178,27 @@ export default function TenantsPage() {
     properties.map((p) => [p.id, `${p.address_line_1}, ${p.town}`])
   )
 
-  const paymentMap = Object.fromEntries(
-    payments.map((p) => [p.tenant_id, p])
+  const currentMonthKey = (() => {
+    const d = new Date()
+    d.setDate(1)
+    return d.toISOString().split('T')[0]
+  })()
+
+  const currentPaymentMap = Object.fromEntries(
+    payments
+      .filter((p) => p.payment_month === currentMonthKey)
+      .map((p) => [p.tenant_id, p])
   )
+
+  function tenantPaymentHistory(tenantId: string) {
+    return payments.filter((p) => p.tenant_id === tenantId)
+  }
+
+  function tenantArrears(t: Tenant) {
+    return tenantPaymentHistory(t.id).reduce((sum, p) => {
+      return sum + Math.max(0, Number(p.amount_due ?? 0) - Number(p.amount_paid ?? 0))
+    }, 0)
+  }
 
 
   function resetForm() {
@@ -281,7 +299,7 @@ export default function TenantsPage() {
       paid_date: new Date().toISOString().split('T')[0],
     }
 
-    const existing = paymentMap[t.id]
+    const existing = currentPaymentMap[t.id]
 
     if (existing) {
       const { data, error } = await supabase
@@ -559,8 +577,9 @@ export default function TenantsPage() {
           {tenants.map((t, index) => (
             <div
               key={t.id}
-              style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', borderBottom: index < tenants.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}
+              style={{ padding: '16px 20px', borderBottom: index < tenants.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}
             >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'hsl(var(--color-green-subtle))', border: '1px solid hsl(var(--color-green-muted))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontWeight: 700, color: 'hsl(var(--color-green))' }}>
                 {t.full_name.charAt(0).toUpperCase()}
               </div>
@@ -591,7 +610,7 @@ export default function TenantsPage() {
                     Dep. {formatCurrency(t.deposit)}
                   </p>
                 )}
-                {paymentMap[t.id]?.paid ? (
+                {currentPaymentMap[t.id]?.paid ? (
                   <p style={{ fontSize: '11px', fontWeight: 700, color: 'hsl(var(--color-green))' }}>
                     Paid this month
                   </p>
@@ -606,7 +625,7 @@ export default function TenantsPage() {
               </div>
 
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                {!paymentMap[t.id]?.paid && t.status === 'active' && (
+                {!currentPaymentMap[t.id]?.paid && t.status === 'active' && (
                   <button
                     onClick={() => markPaid(t)}
                     style={{ padding: '6px 14px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
@@ -627,6 +646,41 @@ export default function TenantsPage() {
                 >
                   Delete
                 </button>
+              </div>
+              </div>
+
+              <div style={{ marginLeft: '52px', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed hsl(var(--color-border))' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', marginBottom: '8px' }}>
+                <p style={{ fontSize: '12px', fontWeight: 700, color: 'hsl(var(--color-ink-muted))', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  Rent history
+                </p>
+                <p style={{ fontSize: '12px', fontWeight: 700, color: tenantArrears(t) > 0 ? 'hsl(var(--color-red))' : 'hsl(var(--color-green))' }}>
+                  Arrears: {formatCurrency(tenantArrears(t))}
+                </p>
+              </div>
+
+              {tenantPaymentHistory(t.id).length === 0 ? (
+                <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))' }}>
+                  No payment history yet.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {tenantPaymentHistory(t.id).slice(0, 6).map((p) => {
+                    const due = Number(p.amount_due ?? 0)
+                    const paid = Number(p.amount_paid ?? 0)
+                    const status = paid >= due ? 'Paid' : paid > 0 ? 'Partial' : 'Unpaid'
+                    const colour = paid >= due ? 'hsl(var(--color-green))' : paid > 0 ? 'hsl(var(--color-amber))' : 'hsl(var(--color-red))'
+
+                    return (
+                      <span key={p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 9px', border: '1px solid hsl(var(--color-border))', borderRadius: '999px', fontSize: '11px', color: colour }}>
+                        {new Date(p.payment_month).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                        {' · '}
+                        {status}
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
               </div>
             </div>
           ))}
