@@ -45,6 +45,8 @@ interface Alert {
   propertyId:      string
   propertyAddress: string
   urgencyRank:     number
+  href?:           string
+  actionLabel?:    string
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -192,13 +194,13 @@ export default async function DashboardPage() {
   }
 
   for (const t of unpaidTenants) {
-    alerts.push({ level: 'urgent', urgencyRank: 2, message: `Rent unpaid this month — ${fmt(t.rent_amount)}`, propertyId: t.property_id, propertyAddress: propertyMap[t.property_id] ?? 'Unknown property' })
+    alerts.push({ level: 'urgent', urgencyRank: 2, message: `Rent unpaid this month — ${fmt(t.rent_amount)}`, propertyId: t.property_id, propertyAddress: propertyMap[t.property_id] ?? 'Unknown property', href: '/tenants', actionLabel: 'View tenant →' })
   }
 
   for (const t of partialTenants) {
     const payment = currentPaymentMap[t.id]
     const shortfall = Math.max(0, Number(payment.amount_due ?? t.rent_amount ?? 0) - Number(payment.amount_paid ?? 0))
-    alerts.push({ level: 'warning', urgencyRank: 3, message: `Partial rent paid — ${fmt(shortfall)} outstanding`, propertyId: t.property_id, propertyAddress: propertyMap[t.property_id] ?? 'Unknown property' })
+    alerts.push({ level: 'warning', urgencyRank: 3, message: `Partial rent paid — ${fmt(shortfall)} outstanding`, propertyId: t.property_id, propertyAddress: propertyMap[t.property_id] ?? 'Unknown property', href: '/tenants', actionLabel: 'View tenant →' })
   }
 
   for (const p of vacantProperties) {
@@ -325,10 +327,10 @@ export default async function DashboardPage() {
 
                 {/* Link */}
                 <Link
-                  href={`/properties/${alert.propertyId}`}
+                  href={alert.href ?? `/properties/${alert.propertyId}`}
                   style={{ flexShrink: 0, padding: '5px 12px', background: 'transparent', color: 'hsl(var(--color-ink-subtle))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}
                 >
-                  View property →
+                  {alert.actionLabel ?? 'View property →'}
                 </Link>
               </div>
             ))}
