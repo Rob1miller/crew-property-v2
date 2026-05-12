@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { DashboardSearch } from '@/components/dashboard/DashboardSearch'
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -14,6 +15,8 @@ interface Tenant {
   property_id: string
   status: string
   rent_amount: number
+  full_name: string
+  email: string | null
 }
 
 interface RentPayment {
@@ -105,7 +108,7 @@ export default async function DashboardPage() {
       .order('created_at'),
     supabase
       .from('tenants')
-      .select('id, property_id, status, rent_amount')
+      .select('id, property_id, status, rent_amount, full_name, email')
       .eq('user_id', user!.id),
     supabase
       .from('compliance_items')
@@ -243,6 +246,8 @@ export default async function DashboardPage() {
           <p>Overview of your portfolio</p>
         </div>
       </div>
+
+      <DashboardSearch properties={properties} tenants={tenants} />
 
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', marginBottom: '32px', background: 'hsl(var(--color-border))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-lg, var(--radius))', overflow: 'hidden' }}>
