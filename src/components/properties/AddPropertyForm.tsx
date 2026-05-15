@@ -106,12 +106,15 @@ export function AddPropertyForm() {
                 <label style={labelStyle}>Property type *</label>
                 <select name="property_type" required style={{ ...inputStyle, cursor: 'pointer' }}>
                   <option value="">Select…</option>
+                  <option disabled>Residential</option>
                   <option value="house">House</option>
                   <option value="flat">Flat</option>
                   <option value="bungalow">Bungalow</option>
                   <option value="hmo">HMO</option>
-                  <option value="commercial">Commercial</option>
-                  <option value="other">Other</option>
+                  <option disabled>Commercial</option>
+                  <option value="commercial">Commercial unit</option>
+                  <option disabled>Other</option>
+                  <option value="other">Other / mixed use</option>
                 </select>
               </div>
               <div>
