@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { DashboardSearch } from '@/components/dashboard/DashboardSearch'
+import { AddReminderForm } from '@/components/reminders/AddReminderForm'
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -33,6 +34,15 @@ interface ActivityLog {
   type: string
   message: string
   created_at: string
+  property_id: string | null
+  tenant_id: string | null
+}
+
+interface Reminder {
+  id: string
+  title: string
+  due_date: string
+  status: string
   property_id: string | null
   tenant_id: string | null
 }
@@ -110,6 +120,7 @@ export default async function DashboardPage() {
     { data: epcPlansData },
     { data: rentPaymentsData },
     { data: activityLogsData },
+    { data: remindersData },
   ] = await Promise.all([
     supabase
       .from('properties')
@@ -138,6 +149,13 @@ export default async function DashboardPage() {
       .eq('user_id', user!.id)
       .order('created_at', { ascending: false })
       .limit(10),
+    supabase
+      .from('reminders')
+      .select('id, title, due_date, status, property_id, tenant_id')
+      .eq('user_id', user!.id)
+      .eq('status', 'open')
+      .order('due_date', { ascending: true })
+      .limit(8),
   ])
 
   const properties = (propertiesData ?? []) as Property[]
@@ -146,6 +164,7 @@ export default async function DashboardPage() {
   const epcPlans   = (epcPlansData   ?? []) as EpcPlan[]
   const rentPayments = (rentPaymentsData ?? []) as RentPayment[]
   const activityLogs = (activityLogsData ?? []) as ActivityLog[]
+  const reminders = (remindersData ?? []) as Reminder[]
 
   // ── Computed values ──────────────────────────────────────
 
@@ -266,6 +285,8 @@ export default async function DashboardPage() {
 
       <DashboardSearch properties={properties} tenants={tenants} compliance={compliance} />
 
+      <AddReminderForm userId={user!.id} properties={properties} />
+
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', marginBottom: '32px', background: 'hsl(var(--color-border))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-lg, var(--radius))', overflow: 'hidden' }}>
         {stats.map((s) => (
@@ -278,6 +299,39 @@ export default async function DashboardPage() {
             </p>
           </div>
         ))}
+      </div>
+
+      {/* Upcoming reminders */}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>Upcoming reminders</h2>
+          <span style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))' }}>
+            {reminders.length} open
+          </span>
+        </div>
+
+        {reminders.length === 0 ? (
+          <div style={{ padding: '22px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)' }}>
+            <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>No open reminders.</p>
+          </div>
+        ) : (
+          <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+            {reminders.map((r, index) => {
+              const due = new Date(r.due_date)
+              const overdue = due < today
+              return (
+                <div key={r.id} style={{ padding: '12px 16px', borderBottom: index < reminders.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
+                  <p style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>{r.title}</p>
+                  <p style={{ fontSize: '12px', color: overdue ? 'hsl(var(--color-red))' : 'hsl(var(--color-ink-subtle))' }}>
+                    {overdue ? 'Overdue · ' : 'Due · '}
+                    {due.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {r.property_id ? ` · ${propertyMap[r.property_id] ?? 'Property'}` : ''}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Recent activity */}
