@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { AddComplianceForm } from '@/components/compliance/AddComplianceForm'
 import type { ComplianceItem, ComplianceStatus } from '@/types/compliance'
 import type { Property } from '@/types/property'
@@ -167,17 +168,25 @@ export default async function CompliancePage() {
                                 </p>
                               )}
                             </div>
-                            <span style={{
-                              padding: '4px 10px',
-                              borderRadius: '999px',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              flexShrink: 0,
-                              background: sc.bg,
-                              color: sc.text,
-                            }}>
-                              {STATUS_LABELS[item.status]}
-                            </span>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                              <span style={{
+                                padding: '4px 10px',
+                                borderRadius: '999px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                background: sc.bg,
+                                color: sc.text,
+                              }}>
+                                {STATUS_LABELS[item.status]}
+                              </span>
+
+                              <Link
+                                href={`/properties/${property.id}`}
+                                style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 700, color: 'hsl(var(--color-green))', background: 'hsl(var(--color-green-subtle))', border: '1px solid hsl(var(--color-green-muted))', borderRadius: 'var(--radius-sm)', textDecoration: 'none' }}
+                              >
+                                Open
+                              </Link>
+                            </div>
                           </div>
                         )
                       })}
