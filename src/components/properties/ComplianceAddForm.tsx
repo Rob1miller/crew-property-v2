@@ -61,6 +61,13 @@ export function ComplianceAddForm({ propertyId }: { propertyId: string }) {
     })
     if (dbError) { setError(dbError.message); setPending(false); return }
 
+    await supabase.from('activity_logs').insert({
+      user_id: user.id,
+      property_id: propertyId,
+      type: 'compliance_added',
+      message: `Compliance item added: ${title}`,
+    })
+
     form.reset()
     router.refresh()
     setPending(false)

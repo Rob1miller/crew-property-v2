@@ -66,6 +66,13 @@ export function ComplianceEditForm({ item, propertyId }: { item: Item; propertyI
       .eq('user_id', user.id)
     if (dbError) { setError(dbError.message); setPending(false); return }
 
+    await supabase.from('activity_logs').insert({
+      user_id: user.id,
+      property_id: propertyId,
+      type: 'compliance_updated',
+      message: `Compliance item updated: ${title}`,
+    })
+
     router.refresh()
     setPending(false)
   }
