@@ -329,7 +329,7 @@ export default async function PropertyDetailPage({
           </div>
         ) : (
           <div style={card}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+            <div className="property-detail-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
               <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'hsl(var(--color-green-subtle))', border: '1px solid hsl(var(--color-green-muted))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '14px', fontWeight: 700, color: 'hsl(var(--color-green))' }}>
                   {tenant.full_name.charAt(0).toUpperCase()}
@@ -390,7 +390,7 @@ export default async function PropertyDetailPage({
                 <div key={item.id} style={{ borderBottom: index < compliance.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
 
                   {/* ── Item summary row ── */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', padding: '14px 20px' }}>
+                  <div className="property-detail-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', padding: '14px 20px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' as const }}>
                         <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>{item.title}</p>
@@ -531,7 +531,7 @@ export default async function PropertyDetailPage({
             <form action={saveEpcPlanAction}>
               <input type="hidden" name="property_id" value={id} />
               {epcPlan && <input type="hidden" name="plan_id" value={epcPlan.id} />}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+              <div className="property-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
                 <div>
                   <label style={labelSt}>Current rating *</label>
                   <select name="current_rating" required defaultValue={epcPlan?.current_rating ?? ''} style={{ ...inputStyle, cursor: 'pointer' }}>
@@ -547,7 +547,7 @@ export default async function PropertyDetailPage({
                   </select>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '18px' }}>
+              <div className="property-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '18px' }}>
                 <div>
                   <label style={labelSt}>EPC expiry date</label>
                   <input name="expiry_date" type="date" defaultValue={epcPlan?.expiry_date ?? ''} style={inputStyle} />
@@ -633,7 +633,7 @@ export default async function PropertyDetailPage({
               <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
                 {epcWorks.map((work, index) => (
                   <div key={work.id} style={{ padding: '14px 20px', borderBottom: index < epcWorks.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                    <div className="property-epc-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '3px' }}>
                           <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>{work.work_completed}</p>

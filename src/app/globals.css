@@ -338,3 +338,27 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+@media (max-width: 820px) {
+  .property-detail-row,
+  .property-detail-actions,
+  .property-document-row,
+  .property-epc-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .property-detail-row a,
+  .property-detail-row button,
+  .property-document-row a,
+  .property-document-row button,
+  .property-epc-row a,
+  .property-epc-row button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .property-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
