@@ -67,7 +67,14 @@ function PropertyCard({ p }: { p: Property }) {
   )
 }
 
-export default async function PropertiesPage() {
+export default async function PropertiesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ type?: string }>
+}) {
+  const resolvedSearchParams = await searchParams
+  const selectedType = resolvedSearchParams?.type ?? 'all'
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -77,18 +84,49 @@ export default async function PropertiesPage() {
     .eq('user_id', user!.id)
     .order('created_at', { ascending: false })
 
-  const list = (properties ?? []) as Property[]
+  const allProperties = (properties ?? []) as Property[]
+  const list = selectedType === 'all'
+    ? allProperties
+    : allProperties.filter((p) => selectedType === 'residential' ? p.property_type !== 'commercial' : p.property_type === 'commercial')
+
+  const residentialCount = allProperties.filter((p) => p.property_type !== 'commercial').length
+  const commercialCount = allProperties.filter((p) => p.property_type === 'commercial').length
 
   return (
     <div className="animate-slide-up">
       <div className="page-header">
         <div className="page-header-left">
           <h1>Properties</h1>
-          <p>{list.length} {list.length === 1 ? 'property' : 'properties'} in your portfolio</p>
+          <p>{allProperties.length} {allProperties.length === 1 ? 'property' : 'properties'} in your portfolio</p>
         </div>
       </div>
 
       <AddPropertyForm />
+
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        {[
+          { label: `All (${allProperties.length})`, href: '/properties', active: selectedType === 'all' },
+          { label: `Residential (${residentialCount})`, href: '/properties?type=residential', active: selectedType === 'residential' },
+          { label: `Commercial (${commercialCount})`, href: '/properties?type=commercial', active: selectedType === 'commercial' },
+        ].map((filter) => (
+          <Link
+            key={filter.href}
+            href={filter.href}
+            style={{
+              padding: '7px 12px',
+              borderRadius: '999px',
+              border: filter.active ? '1px solid hsl(var(--color-green))' : '1px solid hsl(var(--color-border))',
+              background: filter.active ? 'hsl(var(--color-green-subtle))' : 'hsl(var(--color-surface))',
+              color: filter.active ? 'hsl(var(--color-green))' : 'hsl(var(--color-ink-subtle))',
+              textDecoration: 'none',
+              fontSize: '12px',
+              fontWeight: 700,
+            }}
+          >
+            {filter.label}
+          </Link>
+        ))}
+      </div>
 
       {error && (
         <p style={{ fontSize: '13px', color: 'hsl(var(--color-red))', marginBottom: '16px' }}>
