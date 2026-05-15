@@ -678,7 +678,7 @@ export default function TenantsPage() {
               key={t.id}
               style={{ padding: '16px 20px', borderBottom: index < tenants.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div className="tenant-row-main" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'hsl(var(--color-green-subtle))', border: '1px solid hsl(var(--color-green-muted))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontWeight: 700, color: 'hsl(var(--color-green))' }}>
                 {t.full_name.charAt(0).toUpperCase()}
               </div>
@@ -723,7 +723,7 @@ export default function TenantsPage() {
                 })()}
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+              <div className="tenant-row-actions" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                 {t.status === 'active' && (
                   <>
                     <button
