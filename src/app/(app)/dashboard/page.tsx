@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { revalidatePath } from 'next/cache'
 import { DashboardSearch } from '@/components/dashboard/DashboardSearch'
 import { AddReminderForm } from '@/components/reminders/AddReminderForm'
 
@@ -258,6 +259,42 @@ export default async function DashboardPage() {
 
   // ── Stat cards ───────────────────────────────────────────
 
+  async function completeReminderAction(formData: FormData) {
+    'use server'
+
+    const reminderId = formData.get('reminder_id') as string
+    if (!reminderId) return
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data: reminder } = await supabase
+      .from('reminders')
+      .select('id, title, property_id, tenant_id')
+      .eq('id', reminderId)
+      .eq('user_id', user.id)
+      .single()
+
+    await supabase
+      .from('reminders')
+      .update({ status: 'done' })
+      .eq('id', reminderId)
+      .eq('user_id', user.id)
+
+    if (reminder) {
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        property_id: reminder.property_id,
+        tenant_id: reminder.tenant_id,
+        type: 'reminder_completed',
+        message: `Reminder completed: ${reminder.title}`,
+      })
+    }
+
+    revalidatePath('/dashboard')
+  }
+
   const stats = [
     { label: 'Properties',               value: properties.length,             warn: false },
     { label: 'Active tenants',           value: activeTenants.length,          warn: false },
@@ -320,13 +357,22 @@ export default async function DashboardPage() {
               const due = new Date(r.due_date)
               const overdue = due < today
               return (
-                <div key={r.id} style={{ padding: '12px 16px', borderBottom: index < reminders.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
-                  <p style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>{r.title}</p>
-                  <p style={{ fontSize: '12px', color: overdue ? 'hsl(var(--color-red))' : 'hsl(var(--color-ink-subtle))' }}>
-                    {overdue ? 'Overdue · ' : 'Due · '}
-                    {due.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    {r.property_id ? ` · ${propertyMap[r.property_id] ?? 'Property'}` : ''}
-                  </p>
+                <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', padding: '12px 16px', borderBottom: index < reminders.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
+                  <div>
+                    <p style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>{r.title}</p>
+                    <p style={{ fontSize: '12px', color: overdue ? 'hsl(var(--color-red))' : 'hsl(var(--color-ink-subtle))' }}>
+                      {overdue ? 'Overdue · ' : 'Due · '}
+                      {due.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {r.property_id ? ` · ${propertyMap[r.property_id] ?? 'Property'}` : ''}
+                    </p>
+                  </div>
+
+                  <form action={completeReminderAction}>
+                    <input type="hidden" name="reminder_id" value={r.id} />
+                    <button type="submit" style={{ padding: '5px 10px', background: 'hsl(var(--color-green))', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>
+                      Done
+                    </button>
+                  </form>
                 </div>
               )
             })}
