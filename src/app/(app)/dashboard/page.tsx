@@ -325,7 +325,7 @@ export default async function DashboardPage() {
       <AddReminderForm userId={user!.id} properties={properties} />
 
       {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', marginBottom: '32px', background: 'hsl(var(--color-border))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-lg, var(--radius))', overflow: 'hidden' }}>
+      <div className="dashboard-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', marginBottom: '32px', background: 'hsl(var(--color-border))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-lg, var(--radius))', overflow: 'hidden' }}>
         {stats.map((s) => (
           <div key={s.label} style={{ background: 'hsl(var(--color-surface))', padding: '20px 24px' }}>
             <p style={{ fontSize: '11px', fontWeight: 700, color: 'hsl(var(--color-ink-subtle))', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>
