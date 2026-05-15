@@ -473,7 +473,7 @@ export default function TenantsPage() {
       </div>
 
       {tenants.length > 0 && (
-        <div className="grid grid-cols-6 gap-px mb-6 bg-border border border-border rounded-lg overflow-hidden">
+        <div className="tenant-stats-grid grid grid-cols-6 gap-px mb-6 bg-border border border-border rounded-lg overflow-hidden">
           {[
             { label: 'Total',          value: tenants.length },
             { label: 'Active',         value: `${active.length} / ${tenants.length}` },
