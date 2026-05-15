@@ -59,6 +59,13 @@ export function PropertyDocUploadForm({
       return
     }
 
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      property_id: propertyId,
+      type: 'document_uploaded',
+      message: `Document uploaded: ${file.name}`,
+    })
+
     setSuccess(true)
     if (fileRef.current) fileRef.current.value = ''
     startTransition(() => router.refresh())
