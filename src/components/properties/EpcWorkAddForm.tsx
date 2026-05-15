@@ -62,6 +62,13 @@ export function EpcWorkAddForm({ propertyId, planId }: { propertyId: string; pla
     })
     if (dbError) { setError(dbError.message); setPending(false); return }
 
+    await supabase.from('activity_logs').insert({
+      user_id: user.id,
+      property_id: propertyId,
+      type: 'epc_work_added',
+      message: `EPC work added: ${work_completed} (£${cost.toLocaleString('en-GB')})`,
+    })
+
     form.reset()
     router.refresh()
     setPending(false)
