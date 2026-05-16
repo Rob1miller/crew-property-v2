@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 
 const pageStyle = {
   minHeight: '100vh',
-  background: 'hsl(var(--color-bg))',
+  background: 'linear-gradient(180deg, hsl(var(--color-bg)) 0%, hsl(var(--color-surface-muted)) 100%)',
   color: 'hsl(var(--color-ink))',
 } as const
 
@@ -16,8 +16,9 @@ const sectionStyle = {
 const cardStyle = {
   background: 'hsl(var(--color-surface))',
   border: '1px solid hsl(var(--color-border))',
-  borderRadius: 'var(--radius)',
-  padding: '22px',
+  borderRadius: 'var(--radius-lg)',
+  padding: '24px',
+  boxShadow: 'var(--shadow-sm)',
 } as const
 
 export function MarketingPage({ children }: { children: ReactNode }) {
@@ -32,14 +33,16 @@ export function MarketingPage({ children }: { children: ReactNode }) {
 
 export function MarketingNav() {
   return (
-    <nav style={{ borderBottom: '1px solid hsl(var(--color-border))', background: 'hsl(var(--color-surface))' }}>
+    <nav style={{ borderBottom: '1px solid hsl(var(--color-border))', background: 'hsl(var(--color-surface) / 0.92)', position: 'sticky', top: 0, zIndex: 20 }}>
       <div className="marketing-nav-inner" style={{ maxWidth: '1040px', margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '18px' }}>
         <Link href="/" style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'hsl(var(--color-ink))', textDecoration: 'none' }}>
           Crew <span style={{ color: 'hsl(var(--color-green-mid))' }}>Property</span>
         </Link>
         <div className="marketing-nav-links" style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          <Link href="/" style={navLinkStyle}>Home</Link>
           <Link href="/epc-planner" style={navLinkStyle}>EPC Planner</Link>
           <Link href="/landlord-compliance" style={navLinkStyle}>Landlord Compliance</Link>
+          <Link href="/demo" style={{ ...navLinkStyle, color: 'hsl(var(--color-green))', fontWeight: 800 }}>Request Demo</Link>
           <Link href="/login" style={{ ...navLinkStyle, color: 'hsl(var(--color-green))', fontWeight: 700 }}>Sign in</Link>
         </div>
       </div>
@@ -66,7 +69,8 @@ export function MarketingHero({
   children?: ReactNode
 }) {
   return (
-    <section style={{ ...sectionStyle, paddingTop: '96px', paddingBottom: '84px' }}>
+    <section style={{ ...sectionStyle, paddingTop: '104px', paddingBottom: '88px' }}>
+      <div style={{ width: '52px', height: '4px', borderRadius: '999px', background: 'hsl(var(--color-green))', marginBottom: '22px' }} />
       {eyebrow && (
         <p style={{ fontSize: '12px', fontWeight: 800, color: 'hsl(var(--color-green))', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '18px' }}>
           {eyebrow}
@@ -135,7 +139,7 @@ export function CTAButtons() {
   return (
     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
       <Link href="/login" style={primaryButtonStyle}>Sign in</Link>
-      <Link href="/signup" style={secondaryButtonStyle}>Request demo / Join waitlist</Link>
+      <Link href="/demo" style={secondaryButtonStyle}>Request demo / Join waitlist</Link>
     </div>
   )
 }
@@ -151,6 +155,7 @@ export const primaryButtonStyle = {
   fontSize: '13px',
   fontWeight: 700,
   textDecoration: 'none',
+  boxShadow: 'var(--shadow-sm)',
 } as const
 
 export const secondaryButtonStyle = {
@@ -165,6 +170,7 @@ export const secondaryButtonStyle = {
   fontSize: '13px',
   fontWeight: 700,
   textDecoration: 'none',
+  boxShadow: 'var(--shadow-sm)',
 } as const
 
 export function MarketingFooter() {

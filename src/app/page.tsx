@@ -62,7 +62,7 @@ export default function HomePage() {
 
       <MarketingSection title="Early access" intro="Crew Property is being shaped around practical UK landlord workflows, especially compliance visibility and EPC planning. Join early access or sign in if you already have an account.">
         <div id="early-access" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <a href="/signup" style={primaryButtonStyle}>Request demo / Join waitlist</a>
+          <a href="/demo" style={primaryButtonStyle}>Request demo / Join waitlist</a>
           <a href="/login" style={{ ...primaryButtonStyle, background: 'hsl(var(--color-surface))', color: 'hsl(var(--color-ink))', border: '1px solid hsl(var(--color-border))' }}>Sign in</a>
         </div>
       </MarketingSection>
