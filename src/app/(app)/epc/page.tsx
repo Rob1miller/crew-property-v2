@@ -160,6 +160,9 @@ export default async function EpcPage() {
           >
             Go to properties
           </Link>
+          <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-faint))', marginTop: '14px' }}>
+            Example plan: current rating D, target C, improvement cap £10,000.
+          </p>
         </div>
       )}
 
@@ -258,6 +261,9 @@ export default async function EpcPage() {
                       }}>
                         No EPC plan
                       </span>
+                      <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))', marginTop: '6px' }}>
+                        Open the property to add current and target ratings.
+                      </p>
                     </div>
                   )}
 

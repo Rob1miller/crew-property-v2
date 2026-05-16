@@ -136,7 +136,15 @@ export default async function ActivityPage({
       {logs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '48px 24px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', color: 'hsl(var(--color-ink-subtle))' }}>
           <p style={{ fontSize: '15px', fontWeight: 600, color: 'hsl(var(--color-ink))', marginBottom: '6px' }}>No activity yet</p>
-          <p style={{ fontSize: '13px' }}>Activity will appear here as you manage properties, tenants, reminders and documents.</p>
+          <p style={{ fontSize: '13px', marginBottom: '18px' }}>Activity will appear here as you manage properties, tenants, reminders and documents.</p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <Link href="/properties" style={{ padding: '8px 14px', background: 'hsl(var(--color-green))', color: 'white', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
+              Add property
+            </Link>
+            <Link href="/reminders" style={{ padding: '8px 14px', background: 'transparent', color: 'hsl(var(--color-ink-subtle))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
+              Create reminder
+            </Link>
+          </div>
         </div>
       ) : (
         <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>

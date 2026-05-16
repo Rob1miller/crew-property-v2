@@ -284,6 +284,9 @@ export default async function DocumentsPage({
           <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-faint))', marginTop: '10px' }}>
             Start with tenancy agreements, certificates, invoices or receipts. They will appear here once attached to a property.
           </p>
+          <a href="/properties" style={{ display: 'inline-flex', marginTop: '18px', padding: '9px 18px', background: 'hsl(var(--color-green))', color: 'white', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
+            Open properties
+          </a>
         </div>
       ) : filteredDocs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 24px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', color: 'hsl(var(--color-ink-subtle))', marginTop: '24px' }}>

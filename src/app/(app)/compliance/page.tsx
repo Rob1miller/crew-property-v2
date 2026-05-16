@@ -104,7 +104,10 @@ export default async function CompliancePage() {
       {properties.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 24px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', color: 'hsl(var(--color-ink-subtle))' }}>
           <p style={{ fontSize: '15px', fontWeight: 500, marginBottom: '8px' }}>No properties yet</p>
-          <p style={{ fontSize: '13px' }}>Add a property first, then track its compliance items here.</p>
+          <p style={{ fontSize: '13px', marginBottom: '18px' }}>Add a property first, then track gas safety, EICR, EPC and insurance items here.</p>
+          <Link href="/properties" style={{ padding: '9px 18px', background: 'hsl(var(--color-green))', color: 'white', borderRadius: 'var(--radius-sm)', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
+            Go to properties
+          </Link>
         </div>
       ) : (
         <>
@@ -134,7 +137,9 @@ export default async function CompliancePage() {
                   {/* Compliance items */}
                   {propItems.length === 0 ? (
                     <div style={{ padding: '16px 20px' }}>
-                      <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>No compliance items yet for this property.</p>
+                      <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>
+                        No compliance items yet. Add the first certificate or renewal date using the form above.
+                      </p>
                     </div>
                   ) : (
                     <div>

@@ -70,7 +70,15 @@ function ReminderSection({
 
       {reminders.length === 0 ? (
         <div style={{ padding: '18px 20px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)' }}>
-          <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>No reminders in this section.</p>
+          <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>
+            {title === 'Overdue'
+              ? 'Nothing overdue. New reminders will move here after their due date.'
+              : title === 'Due soon'
+                ? 'No reminders due in the next few days.'
+                : title === 'Upcoming'
+                  ? 'Add reminders for renewals, inspections, rent checks or document follow-ups.'
+                  : 'Completed reminders will appear here.'}
+          </p>
         </div>
       ) : (
         <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
