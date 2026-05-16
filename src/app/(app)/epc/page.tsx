@@ -119,7 +119,7 @@ export default async function EpcPage() {
 
       {/* Summary strip */}
       {properties.length > 0 && (
-        <div className="grid grid-cols-4 gap-px mb-6 bg-border border border-border rounded-lg overflow-hidden">
+        <div className="epc-stats-grid grid grid-cols-4 gap-px mb-6 bg-border border border-border rounded-lg overflow-hidden">
           {[
             { label: 'Properties',   value: properties.length },
             { label: 'Plans set up', value: `${withPlan.length} / ${properties.length}` },
@@ -186,7 +186,7 @@ export default async function EpcPage() {
                   borderBottom: index < properties.length - 1 ? '1px solid hsl(var(--color-border))' : 'none',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' as const }}>
+                <div className="epc-property-row" style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' as const }}>
 
                   {/* Address */}
                   <div style={{ flex: '1 1 180px', minWidth: 0 }}>

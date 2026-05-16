@@ -75,7 +75,7 @@ export function EditPropertyForm({ property }: { property: Property }) {
               <input name="address_line_2" type="text" defaultValue={property.address_line_2 ?? ''} style={inputStyle} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+            <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Town / City *</label>
                 <input name="town" type="text" required defaultValue={property.town} style={inputStyle} />
@@ -86,7 +86,7 @@ export function EditPropertyForm({ property }: { property: Property }) {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+            <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
               <div>
                 <label style={labelStyle}>Property type *</label>
                 <select name="property_type" required defaultValue={property.property_type} style={{ ...inputStyle, cursor: 'pointer' }}>

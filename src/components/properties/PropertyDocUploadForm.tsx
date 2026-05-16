@@ -4,6 +4,8 @@ import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/browser'
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
 export function PropertyDocUploadForm({
   propertyId,
   userId,
@@ -25,6 +27,10 @@ export function PropertyDocUploadForm({
     const file = fileRef.current?.files?.[0]
     if (!file) {
       setError('Please choose a file.')
+      return
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setError('File is too large. Please choose a file under 10 MB.')
       return
     }
 

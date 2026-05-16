@@ -179,6 +179,11 @@ body {
   align-items: center;
 }
 
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
 @keyframes fade-in  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slide-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -281,6 +286,10 @@ body {
     font-size: 22px;
   }
 
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
   .app-content > div[style*="grid-template-columns"] {
     grid-template-columns: 1fr !important;
   }
@@ -366,6 +375,9 @@ body {
 @media (max-width: 820px) {
   .compliance-property-header,
   .compliance-item-row,
+  .document-row,
+  .epc-property-row,
+  .property-note-row,
   .reminder-row,
   .dashboard-reminder-row,
   .dashboard-alert-row {
@@ -374,6 +386,7 @@ body {
   }
 
   .compliance-item-actions,
+  .document-row-actions,
   .reminder-row-actions,
   .reminder-form-actions {
     width: 100%;
@@ -382,6 +395,8 @@ body {
 
   .compliance-item-actions a,
   .compliance-item-actions button,
+  .document-row-actions a,
+  .document-row-actions button,
   .reminder-row-actions form,
   .reminder-row-actions button,
   .dashboard-reminder-row form,
@@ -392,6 +407,8 @@ body {
     text-align: center;
   }
 
+  .document-row-actions a,
+  .document-row-actions button,
   .reminder-row-actions button,
   .dashboard-reminder-row button {
     width: 100%;
@@ -405,5 +422,19 @@ body {
   .reminder-add-form input,
   .reminder-add-form select {
     width: 100%;
+  }
+
+  .epc-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .property-notes-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .epc-stats-grid {
+    grid-template-columns: 1fr !important;
   }
 }

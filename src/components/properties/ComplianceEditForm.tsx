@@ -18,6 +18,8 @@ const labelSt = {
   textTransform: 'uppercase' as const, letterSpacing: '0.4px',
 }
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
 interface Item {
   id: string
   type: string
@@ -47,6 +49,11 @@ export function ComplianceEditForm({ item, propertyId }: { item: Item; propertyI
     const file = data.get('file') as File | null
     let document_url = item.document_url          // keep existing if no new file uploaded
     if (file && file.size > 0) {
+      if (file.size > MAX_FILE_SIZE) {
+        setError('File is too large. Please choose a file under 10 MB.')
+        setPending(false)
+        return
+      }
       const uploaded = await uploadDocument(file, user.id, propertyId)
       if (!uploaded) { setError('File upload failed — check file size and try again.'); setPending(false); return }
       document_url = uploaded
@@ -84,7 +91,7 @@ export function ComplianceEditForm({ item, propertyId }: { item: Item; propertyI
       </summary>
       <div style={{ padding: '16px 20px 20px', background: 'hsl(var(--color-surface-muted))' }}>
         <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+          <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
               <label style={labelSt}>Type *</label>
               <select name="type" required defaultValue={item.type} style={{ ...inputStyle, cursor: 'pointer' }}>

@@ -23,6 +23,8 @@ const card = {
   borderRadius: 'var(--radius)', padding: '20px 24px',
 } as const
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
 export function ComplianceAddForm({ propertyId }: { propertyId: string }) {
   const router   = useRouter()
   const formRef  = useRef<HTMLFormElement>(null)
@@ -44,6 +46,11 @@ export function ComplianceAddForm({ propertyId }: { propertyId: string }) {
     const file = data.get('file') as File | null
     let document_url: string | null = null
     if (file && file.size > 0) {
+      if (file.size > MAX_FILE_SIZE) {
+        setError('File is too large. Please choose a file under 10 MB.')
+        setPending(false)
+        return
+      }
       document_url = await uploadDocument(file, user.id, propertyId)
       if (!document_url) { setError('File upload failed — check file size and try again.'); setPending(false); return }
     }
@@ -80,7 +87,7 @@ export function ComplianceAddForm({ propertyId }: { propertyId: string }) {
       </summary>
       <div style={{ marginTop: '12px', ...card }}>
         <form ref={formRef} onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+          <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
             <div>
               <label style={labelSt}>Type *</label>
               <select name="type" required style={{ ...inputStyle, cursor: 'pointer' }}>

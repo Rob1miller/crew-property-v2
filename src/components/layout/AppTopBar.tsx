@@ -9,7 +9,6 @@ const ROUTE_TITLES: Array<{ prefix: string; title: string; exact?: boolean }> = 
   { prefix: '/epc',          title: 'EPC Planner' },
   { prefix: '/tenants',      title: 'Tenants & Rent' },
   { prefix: '/reminders',    title: 'Reminders' },
-  { prefix: '/case-studies', title: 'Case Studies' },
 ]
 
 function usePageTitle(pathname: string): string {

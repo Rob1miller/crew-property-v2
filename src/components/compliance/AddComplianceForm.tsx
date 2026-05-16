@@ -91,7 +91,7 @@ export function AddComplianceForm({ properties }: Props) {
               </select>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+            <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Type *</label>
                 <select name="type" required style={{ ...inputStyle, cursor: 'pointer' }}>

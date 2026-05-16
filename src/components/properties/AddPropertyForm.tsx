@@ -90,7 +90,7 @@ export function AddPropertyForm() {
               <input name="address_line_2" type="text" placeholder="Optional" style={inputStyle} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+            <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
               <div>
                 <label style={labelStyle}>Town / City *</label>
                 <input name="town" type="text" placeholder="Manchester" required style={inputStyle} />
@@ -101,7 +101,7 @@ export function AddPropertyForm() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+            <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
               <div>
                 <label style={labelStyle}>Property type *</label>
                 <select name="property_type" required style={{ ...inputStyle, cursor: 'pointer' }}>

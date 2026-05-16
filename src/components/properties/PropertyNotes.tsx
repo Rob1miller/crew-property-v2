@@ -109,7 +109,7 @@ export function PropertyNotes({
 
       <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', padding: '18px', marginBottom: '16px' }}>
         <form onSubmit={addNote}>
-          <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '12px', marginBottom: '12px' }}>
+          <div className="property-notes-form-grid" style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '12px', marginBottom: '12px' }}>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -153,7 +153,7 @@ export function PropertyNotes({
         <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
           {notes.map((n, index) => (
             <div key={n.id} style={{ padding: '14px 18px', borderBottom: index < notes.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+              <div className="property-note-row" style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-subtle))', marginBottom: '4px' }}>
                     <strong>{n.category ?? 'General'}</strong>

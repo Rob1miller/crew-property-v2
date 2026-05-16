@@ -114,6 +114,12 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  const currentMonthKey = (() => {
+    const d = new Date()
+    d.setDate(1)
+    return d.toISOString().split('T')[0]
+  })()
+
   const [
     { data: propertiesData },
     { data: tenantsData },
@@ -143,7 +149,8 @@ export default async function DashboardPage() {
     supabase
       .from('rent_payments')
       .select('id, tenant_id, payment_month, amount_due, amount_paid, paid')
-      .eq('user_id', user!.id),
+      .eq('user_id', user!.id)
+      .eq('payment_month', currentMonthKey),
     supabase
       .from('activity_logs')
       .select('id, type, message, created_at, property_id, tenant_id')
@@ -189,12 +196,6 @@ export default async function DashboardPage() {
 
   const propertyAddress = (p: Property) => `${p.address_line_1}, ${p.town}`
   const propertyMap     = Object.fromEntries(properties.map((p) => [p.id, propertyAddress(p)]))
-
-  const currentMonthKey = (() => {
-    const d = new Date()
-    d.setDate(1)
-    return d.toISOString().split('T')[0]
-  })()
 
   const currentRentPayments = rentPayments.filter((p) => p.payment_month === currentMonthKey)
   const currentPaymentMap = Object.fromEntries(currentRentPayments.map((p) => [p.tenant_id, p]))

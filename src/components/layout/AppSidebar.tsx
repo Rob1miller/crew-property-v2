@@ -38,17 +38,13 @@ export function AppSidebar({ email }: AppSidebarProps) {
         <NavItem href="/properties" icon="🏠" label="Properties" />
         <NavItem href="/tenants"    icon="👤" label="Tenants & Rent" />
         <NavItem href="/reminders"  icon="⏰" label="Reminders" />
+        <NavItem href="/documents"  icon="📄" label="Documents" />
 
         <p style={{ fontSize: '10px', fontWeight: 700, color: 'hsl(var(--color-ink-faint))', textTransform: 'uppercase', letterSpacing: '1px', padding: '16px 10px 4px' }}>
           Compliance
         </p>
         <NavItem href="/compliance" icon="✓"  label="Compliance" />
         <NavItem href="/epc"        icon="⚡" label="EPC Planner" />
-
-        <p style={{ fontSize: '10px', fontWeight: 700, color: 'hsl(var(--color-ink-faint))', textTransform: 'uppercase', letterSpacing: '1px', padding: '16px 10px 4px' }}>
-          Knowledge
-        </p>
-        <NavItem href="/case-studies" icon="📖" label="Case Studies" />
 
       </nav>
 

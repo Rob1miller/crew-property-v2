@@ -23,6 +23,8 @@ const card = {
   borderRadius: 'var(--radius)', padding: '20px 24px',
 } as const
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
 export function EpcWorkAddForm({ propertyId, planId }: { propertyId: string; planId: string }) {
   const router  = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
@@ -44,6 +46,11 @@ export function EpcWorkAddForm({ propertyId, planId }: { propertyId: string; pla
     const file = data.get('file') as File | null
     let receipt_url: string | null = null
     if (file && file.size > 0) {
+      if (file.size > MAX_FILE_SIZE) {
+        setError('File is too large. Please choose a file under 10 MB.')
+        setPending(false)
+        return
+      }
       receipt_url = await uploadDocument(file, user.id, propertyId)
       if (!receipt_url) { setError('File upload failed — check file size and try again.'); setPending(false); return }
     }
@@ -85,7 +92,7 @@ export function EpcWorkAddForm({ propertyId, planId }: { propertyId: string; pla
             <label style={labelSt}>Work completed *</label>
             <input name="work_completed" type="text" required placeholder="e.g. Loft insulation installed" style={inputStyle} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+          <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
             <div>
               <label style={labelSt}>Cost (£) *</label>
               <input name="cost" type="number" required min="0" step="0.01" placeholder="0.00" style={inputStyle} />

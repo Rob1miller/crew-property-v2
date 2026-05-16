@@ -183,8 +183,8 @@ export default async function PropertyDetailPage({
       .order('created_at', { ascending: false }).maybeSingle(),
     supabase.from('epc_works').select('*')
       .eq('property_id', id).eq('user_id', user!.id).order('created_at'),
-    supabase.from('property_documents').select('*')
-      .eq('property_id', id).eq('user_id', user!.id).order('created_at', { ascending: false }),
+    supabase.from('documents').select('id, file_name, file_path, file_type, uploaded_at')
+      .eq('property_id', id).eq('user_id', user!.id).order('uploaded_at', { ascending: false }),
   ])
 
   if (!property) {

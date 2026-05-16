@@ -310,6 +310,7 @@ export default function TenantsPage() {
         .from('rent_payments')
         .update(payload)
         .eq('id', existing.id)
+        .eq('user_id', user.id)
         .select()
         .single()
 
@@ -423,10 +424,14 @@ export default function TenantsPage() {
 
   async function deleteTenant(id: string) {
     if (!confirm('Delete this tenant? This cannot be undone.')) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
     const { error: err } = await supabase
       .from('tenants')
       .delete()
       .eq('id', id)
+      .eq('user_id', user.id)
     if (err) { alert(err.message); return }
     setTenants((prev) => prev.filter((t) => t.id !== id))
   }
@@ -458,14 +463,14 @@ export default function TenantsPage() {
         <div className="page-header-actions">
           <button
             onClick={generateCurrentMonthRent}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded border border-border bg-surface text-ink text-[13px] font-semibold hover:bg-surface-muted transition-colors duration-100"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid hsl(var(--color-border))', background: 'hsl(var(--color-surface))', color: 'hsl(var(--color-ink))', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
           >
             Generate rent due
           </button>
 
           <button
             onClick={openAdd}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-green text-white text-[13px] font-semibold hover:bg-green-mid transition-colors duration-100"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: 'none', background: 'hsl(var(--color-green))', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
           >
             + Add tenant
           </button>
@@ -535,7 +540,7 @@ export default function TenantsPage() {
               )}
             </div>
 
-            <div style={row2}>
+            <div className="form-grid-2" style={row2}>
               <div>
                 <label style={labelStyle}>Monthly rent (£) *</label>
                 <input
@@ -563,7 +568,7 @@ export default function TenantsPage() {
               </div>
             </div>
 
-            <div style={row2}>
+            <div className="form-grid-2" style={row2}>
               <div>
                 <label style={labelStyle}>Deposit (£)</label>
                 <input
@@ -590,7 +595,7 @@ export default function TenantsPage() {
               </div>
             </div>
 
-            <div style={row2}>
+            <div className="form-grid-2" style={row2}>
               <div>
                 <label style={labelStyle}>Email</label>
                 <input
@@ -613,7 +618,7 @@ export default function TenantsPage() {
               </div>
             </div>
 
-            <div style={row2}>
+            <div className="form-grid-2" style={row2}>
               <div>
                 <label style={labelStyle}>Start date</label>
                 <input

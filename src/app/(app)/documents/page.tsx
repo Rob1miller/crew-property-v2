@@ -179,6 +179,7 @@ export default async function DocumentsPage() {
 
             return (
               <div
+                className="document-row"
                 key={doc.id}
                 style={{
                   display:      'flex',
@@ -247,7 +248,7 @@ export default async function DocumentsPage() {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
+                <div className="document-row-actions" style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
                   {doc.url ? (
                     <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ padding: '6px 14px', background: 'hsl(var(--color-green-subtle))', color: 'hsl(var(--color-green))', border: '1px solid hsl(var(--color-green-muted))', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
                       View
