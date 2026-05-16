@@ -457,6 +457,7 @@ export default async function PropertyDetailPage({
           <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden', marginTop: '16px' }}>
             {docsRows.map((row, index) => (
               <div
+                className="property-document-row"
                 key={row.id}
                 style={{
                   display: 'flex',
@@ -593,7 +594,7 @@ export default async function PropertyDetailPage({
                   )})()}
                 </div>
                 {epcPlan.expiry_date && (
-                  <div style={{ marginLeft: 'auto' }}>
+                  <div className="property-epc-expiry" style={{ marginLeft: 'auto' }}>
                     <p style={{ fontSize: '11px', fontWeight: 600, color: 'hsl(var(--color-ink-subtle))', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>EPC Expires</p>
                     <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>
                       {new Date(epcPlan.expiry_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}

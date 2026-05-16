@@ -117,7 +117,7 @@ export default async function CompliancePage() {
                 <div key={property.id} style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
 
                   {/* Property header */}
-                  <div style={{ padding: '14px 20px', borderBottom: propItems.length > 0 ? '1px solid hsl(var(--color-border))' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="compliance-property-header" style={{ padding: '14px 20px', borderBottom: propItems.length > 0 ? '1px solid hsl(var(--color-border))' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <p style={{ fontSize: '14px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>
                         {property.address_line_1}
@@ -142,6 +142,7 @@ export default async function CompliancePage() {
                         const sc = STATUS_COLOURS[item.status]
                         return (
                           <div
+                            className="compliance-item-row"
                             key={item.id}
                             style={{
                               padding: '14px 20px',
@@ -168,7 +169,7 @@ export default async function CompliancePage() {
                                 </p>
                               )}
                             </div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                            <div className="compliance-item-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
                               <span style={{
                                 padding: '4px 10px',
                                 borderRadius: '999px',

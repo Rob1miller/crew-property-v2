@@ -362,3 +362,43 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+@media (max-width: 820px) {
+  .compliance-property-header,
+  .compliance-item-row,
+  .dashboard-reminder-row,
+  .dashboard-alert-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .compliance-item-actions,
+  .reminder-form-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .compliance-item-actions a,
+  .compliance-item-actions button,
+  .dashboard-reminder-row form,
+  .dashboard-reminder-row button,
+  .dashboard-alert-row a,
+  .reminder-form-actions button {
+    flex: 1;
+    text-align: center;
+  }
+
+  .dashboard-reminder-row button {
+    width: 100%;
+  }
+
+  .property-epc-expiry,
+  .tenant-rent-history {
+    margin-left: 0 !important;
+  }
+
+  .reminder-add-form input,
+  .reminder-add-form select {
+    width: 100%;
+  }
+}

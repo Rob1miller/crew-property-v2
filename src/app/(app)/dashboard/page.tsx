@@ -357,7 +357,7 @@ export default async function DashboardPage() {
               const due = new Date(r.due_date)
               const overdue = due < today
               return (
-                <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', padding: '12px 16px', borderBottom: index < reminders.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
+                <div className="dashboard-reminder-row" key={r.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', padding: '12px 16px', borderBottom: index < reminders.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}>
                   <div>
                     <p style={{ fontSize: '13px', fontWeight: 600, color: 'hsl(var(--color-ink))' }}>{r.title}</p>
                     <p style={{ fontSize: '12px', color: overdue ? 'hsl(var(--color-red))' : 'hsl(var(--color-ink-subtle))' }}>
@@ -452,6 +452,7 @@ export default async function DashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {alerts.map((alert, i) => (
               <div
+                className="dashboard-alert-row"
                 key={i}
                 style={{
                   display:      'flex',

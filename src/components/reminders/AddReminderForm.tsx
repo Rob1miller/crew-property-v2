@@ -73,25 +73,25 @@ export function AddReminderForm({
           + Add reminder
         </button>
       ) : (
-        <form onSubmit={handleSubmit} style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', padding: '16px', display: 'grid', gap: '10px' }}>
+        <form className="reminder-add-form" onSubmit={handleSubmit} style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', padding: '16px', display: 'grid', gap: '10px' }}>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Reminder title..."
-            style={{ padding: '9px 10px', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '14px' }}
+            style={{ width: '100%', padding: '9px 10px', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '14px' }}
           />
 
           <input
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
             type="date"
-            style={{ padding: '9px 10px', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '14px' }}
+            style={{ width: '100%', padding: '9px 10px', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '14px' }}
           />
 
           <select
             value={propertyId}
             onChange={(e) => setPropertyId(e.target.value)}
-            style={{ padding: '9px 10px', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '14px' }}
+            style={{ width: '100%', padding: '9px 10px', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-sm)', fontSize: '14px' }}
           >
             <option value="">No property link</option>
             {properties.map((p) => (
@@ -103,7 +103,7 @@ export function AddReminderForm({
 
           {error && <p style={{ fontSize: '13px', color: 'hsl(var(--color-red))' }}>{error}</p>}
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="reminder-form-actions" style={{ display: 'flex', gap: '8px' }}>
             <button
               type="submit"
               disabled={isPending}

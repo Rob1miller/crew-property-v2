@@ -762,7 +762,7 @@ export default function TenantsPage() {
               </div>
               </div>
 
-              <div style={{ marginLeft: '52px', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed hsl(var(--color-border))' }}>
+              <div className="tenant-rent-history" style={{ marginLeft: '52px', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed hsl(var(--color-border))' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', marginBottom: '8px' }}>
                 <p style={{ fontSize: '12px', fontWeight: 700, color: 'hsl(var(--color-ink-muted))', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                   Rent history
