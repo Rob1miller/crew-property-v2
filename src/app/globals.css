@@ -379,6 +379,7 @@ body {
   .epc-property-row,
   .property-note-row,
   .reminder-row,
+  .activity-row,
   .dashboard-reminder-row,
   .dashboard-alert-row {
     flex-direction: column !important;

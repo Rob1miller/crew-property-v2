@@ -39,6 +39,7 @@ export function AppSidebar({ email }: AppSidebarProps) {
         <NavItem href="/tenants"    icon="👤" label="Tenants & Rent" />
         <NavItem href="/reminders"  icon="⏰" label="Reminders" />
         <NavItem href="/documents"  icon="📄" label="Documents" />
+        <NavItem href="/activity"   icon="↺" label="Activity" />
 
         <p style={{ fontSize: '10px', fontWeight: 700, color: 'hsl(var(--color-ink-faint))', textTransform: 'uppercase', letterSpacing: '1px', padding: '16px 10px 4px' }}>
           Compliance
