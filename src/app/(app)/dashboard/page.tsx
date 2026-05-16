@@ -17,6 +17,7 @@ interface Tenant {
   property_id: string
   status: string
   rent_amount: number
+  rent_due_day: number | null
   full_name: string
   email: string | null
 }
@@ -136,7 +137,7 @@ export default async function DashboardPage() {
       .order('created_at'),
     supabase
       .from('tenants')
-      .select('id, property_id, status, rent_amount, full_name, email')
+      .select('id, property_id, status, rent_amount, rent_due_day, full_name, email')
       .eq('user_id', user!.id),
     supabase
       .from('compliance_items')
@@ -218,6 +219,13 @@ export default async function DashboardPage() {
     if (!payment) return sum + Number(t.rent_amount ?? 0)
     return sum + Math.max(0, Number(payment.amount_due ?? t.rent_amount ?? 0) - Number(payment.amount_paid ?? 0))
   }, 0)
+  const lateRentTenants = unpaidTenants.filter((t) => new Date().getDate() > (t.rent_due_day ?? 1))
+
+  function lateRentText(t: Tenant) {
+    const dueDay = t.rent_due_day ?? 1
+    const daysLate = Math.max(0, new Date().getDate() - dueDay)
+    return daysLate > 0 ? ` · late by ${daysLate} day${daysLate === 1 ? '' : 's'}` : ''
+  }
 
   // ── Build alerts ─────────────────────────────────────────
 
@@ -235,13 +243,13 @@ export default async function DashboardPage() {
   }
 
   for (const t of unpaidTenants) {
-    alerts.push({ level: 'urgent', urgencyRank: 2, message: `Rent unpaid this month — ${fmt(t.rent_amount)}`, propertyId: t.property_id, propertyAddress: propertyMap[t.property_id] ?? 'Unknown property', href: '/tenants', actionLabel: 'View tenant →' })
+    alerts.push({ level: 'urgent', urgencyRank: 2, message: `Rent unpaid this month — ${fmt(t.rent_amount)}${lateRentText(t)}`, propertyId: t.property_id, propertyAddress: propertyMap[t.property_id] ?? 'Unknown property', href: '/tenants', actionLabel: 'View tenant →' })
   }
 
   for (const t of partialTenants) {
     const payment = currentPaymentMap[t.id]
     const shortfall = Math.max(0, Number(payment.amount_due ?? t.rent_amount ?? 0) - Number(payment.amount_paid ?? 0))
-    alerts.push({ level: 'warning', urgencyRank: 3, message: `Partial rent paid — ${fmt(shortfall)} outstanding`, propertyId: t.property_id, propertyAddress: propertyMap[t.property_id] ?? 'Unknown property', href: '/tenants', actionLabel: 'View tenant →' })
+    alerts.push({ level: 'warning', urgencyRank: 3, message: `Partial rent paid — ${fmt(shortfall)} outstanding${lateRentText(t)}`, propertyId: t.property_id, propertyAddress: propertyMap[t.property_id] ?? 'Unknown property', href: '/tenants', actionLabel: 'View tenant →' })
   }
 
   for (const p of vacantProperties) {
@@ -306,6 +314,7 @@ export default async function DashboardPage() {
     { label: 'EPC below C',              value: belowCPlans.length,            warn: belowCPlans.length > 0 },
     { label: 'Missing EPC plan',         value: propertiesNoEpcPlan.length,    warn: propertiesNoEpcPlan.length > 0 },
     { label: 'Unpaid rent',              value: unpaidTenants.length,           warn: unpaidTenants.length > 0 },
+    { label: 'Overdue rent',             value: lateRentTenants.length,          warn: lateRentTenants.length > 0 },
     { label: 'Partial rent',             value: partialTenants.length,          warn: partialTenants.length > 0 },
     { label: 'Current arrears',          value: fmt(currentArrears),            warn: currentArrears > 0 },
   ]

@@ -90,21 +90,22 @@ const emptyState: React.CSSProperties = {
 
 
 function getRentStatus(t: Tenant) {
-  if (t.status !== 'active') return { label: 'Inactive', colour: 'hsl(var(--color-ink-subtle))', urgent: false }
+  if (t.status !== 'active') return { label: 'Inactive', colour: 'hsl(var(--color-ink-subtle))', urgent: false, daysLate: 0 }
 
   const dueDay = t.rent_due_day ?? 1
   const today = new Date()
   const currentDay = today.getDate()
+  const daysLate = Math.max(0, currentDay - dueDay)
 
   if (currentDay > dueDay + 7) {
-    return { label: 'Check rent', colour: 'hsl(var(--color-red))', urgent: true }
+    return { label: `Late by ${daysLate} days`, colour: 'hsl(var(--color-red))', urgent: true, daysLate }
   }
 
   if (currentDay > dueDay) {
-    return { label: 'Due this month', colour: 'hsl(var(--color-amber))', urgent: true }
+    return { label: `Late by ${daysLate} day${daysLate === 1 ? '' : 's'}`, colour: 'hsl(var(--color-amber))', urgent: true, daysLate }
   }
 
-  return { label: `Due ${dueDay}${ordinalSuffix(dueDay)}`, colour: 'hsl(var(--color-green))', urgent: false }
+  return { label: `Due ${dueDay}${ordinalSuffix(dueDay)}`, colour: 'hsl(var(--color-green))', urgent: false, daysLate: 0 }
 }
 
 function ordinalSuffix(n: number) {
@@ -679,9 +680,14 @@ export default function TenantsPage() {
       ) : tenants.length > 0 ? (
         <div style={{ background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
           {tenants.map((t, index) => (
+            (() => {
+              const rentStatus = getRentStatus(t)
+              const arrears = tenantArrears(t)
+              const highRisk = rentStatus.urgent || arrears > 0
+              return (
             <div
               key={t.id}
-              style={{ padding: '16px 20px', borderBottom: index < tenants.length - 1 ? '1px solid hsl(var(--color-border))' : 'none' }}
+              style={{ padding: '16px 20px', borderBottom: index < tenants.length - 1 ? '1px solid hsl(var(--color-border))' : 'none', background: highRisk ? 'hsl(var(--color-red-subtle))' : 'hsl(var(--color-surface))', borderLeft: highRisk ? '4px solid hsl(var(--color-red))' : '4px solid transparent' }}
             >
               <div className="tenant-row-main" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'hsl(var(--color-green-subtle))', border: '1px solid hsl(var(--color-green-muted))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px', fontWeight: 700, color: 'hsl(var(--color-green))' }}>
@@ -718,14 +724,11 @@ export default function TenantsPage() {
                   <p style={{ fontSize: '11px', fontWeight: 700, color: 'hsl(var(--color-green))' }}>
                     Paid this month
                   </p>
-                ) : (() => {
-                  const rs = getRentStatus(t)
-                  return (
-                    <p style={{ fontSize: '11px', fontWeight: 600, color: rs.colour }}>
-                      {rs.label}
-                    </p>
-                  )
-                })()}
+                ) : (
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: rentStatus.colour }}>
+                    {rentStatus.label}
+                  </p>
+                )}
               </div>
 
               <div className="tenant-row-actions" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
@@ -772,8 +775,8 @@ export default function TenantsPage() {
                 <p style={{ fontSize: '12px', fontWeight: 700, color: 'hsl(var(--color-ink-muted))', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                   Rent history
                 </p>
-                <p style={{ fontSize: '12px', fontWeight: 700, color: tenantArrears(t) > 0 ? 'hsl(var(--color-red))' : 'hsl(var(--color-green))' }}>
-                  Arrears: {formatCurrency(tenantArrears(t))}
+                <p style={{ fontSize: '12px', fontWeight: 700, color: arrears > 0 ? 'hsl(var(--color-red))' : 'hsl(var(--color-green))', background: arrears > 0 ? 'hsl(var(--color-red-muted))' : 'hsl(var(--color-green-subtle))', borderRadius: '999px', padding: '2px 8px' }}>
+                  Arrears: {formatCurrency(arrears)}
                 </p>
               </div>
 
@@ -803,6 +806,8 @@ export default function TenantsPage() {
 
               <TenantNotes tenantId={t.id} userId={t.user_id} />
             </div>
+              )
+            })()
           ))}
         </div>
       ) : null}

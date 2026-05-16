@@ -70,10 +70,11 @@ function PropertyCard({ p }: { p: Property }) {
 export default async function PropertiesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ type?: string }>
+  searchParams?: Promise<{ type?: string; status?: string }>
 }) {
   const resolvedSearchParams = await searchParams
   const selectedType = resolvedSearchParams?.type ?? 'all'
+  const selectedStatus = resolvedSearchParams?.status ?? 'all'
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -85,12 +86,30 @@ export default async function PropertiesPage({
     .order('created_at', { ascending: false })
 
   const allProperties = (properties ?? []) as Property[]
-  const list = selectedType === 'all'
+  const typeFiltered = selectedType === 'all'
     ? allProperties
     : allProperties.filter((p) => selectedType === 'residential' ? p.property_type !== 'commercial' : p.property_type === 'commercial')
+  const list = selectedStatus === 'all'
+    ? typeFiltered
+    : typeFiltered.filter((p) => p.status === selectedStatus)
 
   const residentialCount = allProperties.filter((p) => p.property_type !== 'commercial').length
   const commercialCount = allProperties.filter((p) => p.property_type === 'commercial').length
+  const statusCounts = {
+    all: typeFiltered.length,
+    occupied: typeFiltered.filter((p) => p.status === 'occupied').length,
+    vacant: typeFiltered.filter((p) => p.status === 'vacant').length,
+    refurb: typeFiltered.filter((p) => p.status === 'refurb').length,
+    for_sale: typeFiltered.filter((p) => p.status === 'for_sale').length,
+  }
+
+  function filterHref(type: string, status = selectedStatus) {
+    const params = new URLSearchParams()
+    if (type !== 'all') params.set('type', type)
+    if (status !== 'all') params.set('status', status)
+    const query = params.toString()
+    return query ? `/properties?${query}` : '/properties'
+  }
 
   return (
     <div className="animate-slide-up">
@@ -103,17 +122,17 @@ export default async function PropertiesPage({
 
       <AddPropertyForm />
 
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
         {[
-          { label: `All (${allProperties.length})`, href: '/properties', active: selectedType === 'all' },
-          { label: `Residential (${residentialCount})`, href: '/properties?type=residential', active: selectedType === 'residential' },
-          { label: `Commercial (${commercialCount})`, href: '/properties?type=commercial', active: selectedType === 'commercial' },
+          { label: `All (${allProperties.length})`, href: filterHref('all'), active: selectedType === 'all' },
+          { label: `Residential (${residentialCount})`, href: filterHref('residential'), active: selectedType === 'residential' },
+          { label: `Commercial (${commercialCount})`, href: filterHref('commercial'), active: selectedType === 'commercial' },
         ].map((filter) => (
           <Link
             key={filter.href}
             href={filter.href}
             style={{
-              padding: '7px 12px',
+              padding: '8px 14px',
               borderRadius: '999px',
               border: filter.active ? '1px solid hsl(var(--color-green))' : '1px solid hsl(var(--color-border))',
               background: filter.active ? 'hsl(var(--color-green-subtle))' : 'hsl(var(--color-surface))',
@@ -126,6 +145,27 @@ export default async function PropertiesPage({
             {filter.label}
           </Link>
         ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        {[
+          { id: 'all', label: `All statuses (${statusCounts.all})` },
+          { id: 'occupied', label: `Occupied (${statusCounts.occupied})` },
+          { id: 'vacant', label: `Vacant (${statusCounts.vacant})` },
+          { id: 'refurb', label: `Refurb (${statusCounts.refurb})` },
+          { id: 'for_sale', label: `For sale (${statusCounts.for_sale})` },
+        ].map((filter) => {
+          const active = selectedStatus === filter.id
+          return (
+            <Link
+              key={filter.id}
+              href={filterHref(selectedType, filter.id)}
+              style={{ padding: '6px 11px', borderRadius: '999px', border: active ? '1px solid hsl(var(--color-green))' : '1px solid hsl(var(--color-border))', background: active ? 'hsl(var(--color-green-subtle))' : 'hsl(var(--color-surface))', color: active ? 'hsl(var(--color-green))' : 'hsl(var(--color-ink-subtle))', textDecoration: 'none', fontSize: '12px', fontWeight: 700 }}
+            >
+              {filter.label}
+            </Link>
+          )
+        })}
       </div>
 
       {error && (
@@ -145,8 +185,17 @@ export default async function PropertiesPage({
             color: 'hsl(var(--color-ink-subtle))',
           }}
         >
-          <p style={{ fontSize: '15px', marginBottom: '8px', fontWeight: 500 }}>No properties yet</p>
-          <p style={{ fontSize: '13px' }}>Add your first property using the button above.</p>
+          <p style={{ fontSize: '15px', marginBottom: '8px', fontWeight: 500, color: 'hsl(var(--color-ink))' }}>
+            {allProperties.length === 0 ? 'No properties yet' : 'No matching properties'}
+          </p>
+          <p style={{ fontSize: '13px', marginBottom: allProperties.length === 0 ? '20px' : 0 }}>
+            {allProperties.length === 0 ? 'Add your first property to start building your portfolio dashboard.' : 'Try another property type or status filter.'}
+          </p>
+          {allProperties.length === 0 && (
+            <p style={{ fontSize: '12px', color: 'hsl(var(--color-ink-faint))' }}>
+              Tip: add the address, property type and current status first. Tenants, compliance and documents can follow.
+            </p>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
