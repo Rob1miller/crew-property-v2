@@ -8,6 +8,7 @@ const ROUTE_TITLES: Array<{ prefix: string; title: string; exact?: boolean }> = 
   { prefix: '/compliance',   title: 'Compliance' },
   { prefix: '/epc',          title: 'EPC Planner' },
   { prefix: '/tenants',      title: 'Tenants & Rent' },
+  { prefix: '/reminders',    title: 'Reminders' },
   { prefix: '/case-studies', title: 'Case Studies' },
 ]
 
