@@ -58,7 +58,7 @@ export default function PublicEpcPlannerPage() {
         </CardGrid>
       </MarketingSection>
 
-      <MarketingSection title="See EPC planning inside Crew Property" intro="Join early access, request a demo, or sign in if you already have an account.">
+      <MarketingSection title="See EPC planning inside Crew Property" intro="View the open demo preview, or sign in if you already have an account.">
         <CTAButtons />
       </MarketingSection>
     </MarketingPage>

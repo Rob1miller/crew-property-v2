@@ -59,7 +59,7 @@ export default function LandlordCompliancePage() {
         </CardGrid>
       </MarketingSection>
 
-      <MarketingSection title="Bring compliance into one workspace" intro="Join early access, request a demo, or sign in if you already have an account.">
+      <MarketingSection title="Bring compliance into one workspace" intro="View the open demo preview, or sign in if you already have an account.">
         <CTAButtons />
       </MarketingSection>
     </MarketingPage>

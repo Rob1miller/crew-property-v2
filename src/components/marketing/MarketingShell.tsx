@@ -42,7 +42,7 @@ export function MarketingNav() {
           <Link href="/" style={navLinkStyle}>Home</Link>
           <Link href="/epc-planner" style={navLinkStyle}>EPC Planner</Link>
           <Link href="/landlord-compliance" style={navLinkStyle}>Landlord Compliance</Link>
-          <Link href="/demo" style={{ ...navLinkStyle, color: 'hsl(var(--color-green))', fontWeight: 800 }}>Request Demo</Link>
+          <Link href="/demo" style={{ ...navLinkStyle, color: 'hsl(var(--color-green))', fontWeight: 800 }}>View Demo</Link>
           <Link href="/login" style={{ ...navLinkStyle, color: 'hsl(var(--color-green))', fontWeight: 700 }}>Sign in</Link>
         </div>
       </div>
@@ -139,7 +139,7 @@ export function CTAButtons() {
   return (
     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
       <Link href="/login" style={primaryButtonStyle}>Sign in</Link>
-      <Link href="/demo" style={secondaryButtonStyle}>Request demo / Join waitlist</Link>
+      <Link href="/demo" style={secondaryButtonStyle}>View Demo</Link>
     </div>
   )
 }
