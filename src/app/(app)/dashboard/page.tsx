@@ -310,6 +310,16 @@ export default async function DashboardPage() {
     { label: 'Current arrears',          value: fmt(currentArrears),            warn: currentArrears > 0 },
   ]
 
+  const onboardingItems = [
+    { label: 'Add your first property', href: '/properties', complete: properties.length > 0 },
+    { label: 'Add tenant/rent details', href: '/tenants', complete: tenants.length > 0 },
+    { label: 'Add compliance items', href: '/compliance', complete: compliance.length > 0 },
+    { label: 'Upload documents', href: '/documents', complete: activityLogs.some((log) => log.type === 'document_uploaded') },
+    { label: 'Create reminders', href: '/reminders', complete: reminders.length > 0 || activityLogs.some((log) => log.type === 'reminder_added') },
+  ]
+  const completedOnboarding = onboardingItems.filter((item) => item.complete).length
+  const showOnboarding = properties.length === 0 || completedOnboarding < 3
+
   return (
     <div className="animate-slide-up">
 
@@ -324,6 +334,39 @@ export default async function DashboardPage() {
       <DashboardSearch properties={properties} tenants={tenants} compliance={compliance} />
 
       <AddReminderForm userId={user!.id} properties={properties} />
+
+      {showOnboarding && (
+        <div style={{ marginBottom: '32px', background: 'hsl(var(--color-surface))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+          <div style={{ padding: '18px 20px', borderBottom: '1px solid hsl(var(--color-border))', display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div>
+              <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'hsl(var(--color-ink))', marginBottom: '3px' }}>Get set up</h2>
+              <p style={{ fontSize: '13px', color: 'hsl(var(--color-ink-subtle))' }}>
+                Complete the essentials for a useful portfolio dashboard.
+              </p>
+            </div>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: 'hsl(var(--color-green))', background: 'hsl(var(--color-green-subtle))', border: '1px solid hsl(var(--color-green-muted))', borderRadius: '999px', padding: '4px 10px' }}>
+              {completedOnboarding} / {onboardingItems.length} done
+            </span>
+          </div>
+
+          <div className="onboarding-checklist" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1px', background: 'hsl(var(--color-border))' }}>
+            {onboardingItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px', background: 'hsl(var(--color-surface))', color: 'hsl(var(--color-ink))', textDecoration: 'none' }}
+              >
+                <span style={{ width: '22px', height: '22px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: item.complete ? 'hsl(var(--color-green))' : 'hsl(var(--color-surface-muted))', color: item.complete ? 'white' : 'hsl(var(--color-ink-subtle))', border: item.complete ? 'none' : '1px solid hsl(var(--color-border))', fontSize: '12px', fontWeight: 800 }}>
+                  {item.complete ? '✓' : '·'}
+                </span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: item.complete ? 'hsl(var(--color-ink-subtle))' : 'hsl(var(--color-ink))' }}>
+                  {item.label}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="dashboard-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', marginBottom: '32px', background: 'hsl(var(--color-border))', border: '1px solid hsl(var(--color-border))', borderRadius: 'var(--radius-lg, var(--radius))', overflow: 'hidden' }}>
